@@ -4,6 +4,7 @@ $stamp=Get-Date -Format 'yyyyMMdd-HHmmss'
 $dest=Join-Path $root "backup-dados-antes-instalacao-$stamp"
 New-Item -ItemType Directory -Path $dest -Force | Out-Null
 $folders=@(
+  (Join-Path $env:APPDATA 'Lyra'),
   (Join-Path $env:APPDATA 'Souz Pro Lyric'),
   (Join-Path $env:APPDATA 'souz-pro-lyric-desktop'),
   (Join-Path $env:LOCALAPPDATA 'Souz Pro Lyric'),

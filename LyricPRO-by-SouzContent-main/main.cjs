@@ -9,6 +9,13 @@ const {slideEndpoint, followSlides} = require('./propresenter-bridge.cjs');
 // v0.6.1: telemetria por etapa (captura, pipe, Spout nativo); efeitos preservados.
 const SIZE = {width:1920,height:1080};
 const FPS = 60;
+const SPOUT_NAME = 'Lyra';
+
+// Existing installations can keep using the library in their original data folder.
+const legacyUserData = path.join(app.getPath('appData'), 'Souz Pro Lyric');
+if (!fs.existsSync(app.getPath('userData')) && fs.existsSync(legacyUserData)) {
+  app.setPath('userData', legacyUserData);
+}
 const FRAME_MS = Math.round(1000 / FPS);
 // Em desenvolvimento: native/build/Release. Instalado: resources/native.
 const senderPath = app.isPackaged
@@ -246,7 +253,7 @@ function startSender() {
   lastFrame=0;nativeFrames=0;nativeSample=null;nativeSamplePrev=null;nativeFps=null;nativeWriteMs=null;
   prepMsTotal=0;prepSamples=0;
   prevMetrics={paint:0,queued:0,completed:0,at:Date.now()};
-  const proc=spawn(senderPath,[String(SIZE.width),String(SIZE.height),'Souz Pro Lyric'],{
+  const proc=spawn(senderPath,[String(SIZE.width),String(SIZE.height),SPOUT_NAME],{
     windowsHide:true,stdio:['pipe','ignore','pipe']
   });
   sender=proc;
@@ -264,7 +271,7 @@ function startSender() {
       const msg=line.trim();
       if (!msg) continue;
       console.log('[SPOUT NATIVE]',msg);
-      if (msg.startsWith('SOUZ_READY')) {nativeReady=true;restartAttempts=0;report('Spout2 ativo. Fonte Souz Pro Lyric disponível no Resolume.');}
+      if (msg.startsWith('SOUZ_READY')) {nativeReady=true;restartAttempts=0;report(`Spout2 ativo. Fonte ${SPOUT_NAME} disponível no Resolume.`);}
       else if (msg.startsWith('SOUZ_FRAME')) report('Spout2 recebeu o primeiro quadro; iniciando envio à GPU.');
       else if (msg.startsWith('SOUZ_STATS')) receiveNativeStats(msg);
       else if (msg.startsWith('SOUZ_ERROR')) report('Erro nativo: '+msg,false);

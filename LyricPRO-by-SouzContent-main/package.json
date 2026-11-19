@@ -2,7 +2,7 @@
   "name": "souz-pro-lyric-desktop",
   "version": "0.6.1",
   "private": true,
-  "description": "Souz Pro Lyric Desktop — v0.6.1 com monitoramento Spout2 e animações",
+  "description": "Lyra Desktop — v0.6.1 com monitoramento Spout2 e animações",
   "main": "main.cjs",
   "scripts": {
     "test": "node --test test/propresenter-bridge.test.cjs",
@@ -14,10 +14,10 @@
     "electron": "^39.0.0",
     "electron-builder": "^26.0.12"
   },
-  "productName": "Souz Pro Lyric",
+  "productName": "Lyra",
   "build": {
     "appId": "br.com.souz.prolyric",
-    "productName": "Souz Pro Lyric",
+    "productName": "Lyra",
     "directories": {
       "output": "dist"
     },
@@ -47,7 +47,7 @@
           ]
         }
       ],
-      "artifactName": "Souz-Pro-Lyric-Setup-${version}-${arch}.${ext}"
+      "artifactName": "Lyra-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -55,7 +55,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "Souz Pro Lyric",
+      "shortcutName": "Lyra",
       "deleteAppDataOnUninstall": false
     }
   }

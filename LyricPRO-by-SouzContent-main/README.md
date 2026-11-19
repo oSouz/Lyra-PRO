@@ -1,3 +1,5 @@
+> Documentação das versões anteriores do Souz Pro Lyric. Para a versão Lyra com ProPresenter Bridge, veja o [guia do repositório](../README.md).
+
 # Correção da v0.4 — efeitos de entrada/saída no Resolume
 
 **Correções:** a animação por linha agora usa o seletor correto para o elemento `.ln.live.u`; e a janela offscreen recebe `transition.leave` para executar o efeito de saída antes de desenhar a linha seguinte. Também foi removido o envio inicial duplicado de estado durante a inicialização da saída.

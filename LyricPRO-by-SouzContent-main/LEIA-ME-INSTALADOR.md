@@ -23,7 +23,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\criar-instalador.ps1 -OrigemS
 
 A opção `-OrigemSpout` aceita tanto a pasta raiz de um projeto com `native\build\Release` quanto a própria pasta `Release`, desde que contenha `souz-spout-sender.exe` e `SpoutDX.dll`. Se os dois arquivos já estiverem em `native\build\Release` desta pasta, execute sem `-OrigemSpout`.
 
-O script verifica os binários, roda `npm run check`, instala dependências de construção, confirma a existência do Electron e gera `dist\Souz-Pro-Lyric-Setup-0.6.1-x64.exe` (nome previsto pelo empacotador).
+O script verifica os binários, roda `npm run check`, instala dependências de construção, confirma a existência do Electron e gera `dist\Lyra-Setup-0.6.1-x64.exe` (nome previsto pelo empacotador).
 
 **Se o Electron não baixar corretamente**, como já ocorreu neste computador, verifique a versão realmente instalada com `node -p "require('./node_modules/electron/package.json').version"` e utilize o pacote oficial correspondente ao valor retornado. Não extraia uma versão diferente sem ajustar as dependências.
 

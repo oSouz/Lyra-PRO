@@ -48,7 +48,7 @@ antes de iniciar o aplicativo.
    **Conectar**. O palco mostra o slide atual e o painel mostra o próximo.
    **Desconectar** volta ao modo manual.
 2. Clique em **Iniciar Spout2** e aguarde a confirmação do emissor. A saída
-   usa a fonte **Souz Pro Lyric**, em 1920 × 1080.
+   usa a fonte **Lyra**, em 1920 × 1080.
 3. No Arena, arraste essa fonte de **Sources** para um clipe em uma camada
    acima do fundo, acione o clipe e confira a transparência, inclusive nas
    bordas do texto. Use a mesma GPU para os dois aplicativos.

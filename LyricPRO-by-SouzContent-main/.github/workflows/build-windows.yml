@@ -1,0 +1,62 @@
+name: Construir instalador Windows (teste)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Verificar e empacotar Souz Pro Lyric
+    runs-on: windows-2022
+    timeout-minutes: 60
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar fontes JavaScript e HTML
+        shell: pwsh
+        run: npm run check
+
+      - name: Compilar transmissor Spout2
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & .\scripts\build-spout.ps1
+          if ($LASTEXITCODE -ne 0) { throw "Falha na compilacao Spout2" }
+          foreach ($file in @('native/build/Release/souz-spout-sender.exe', 'native/build/Release/SpoutDX.dll')) {
+            if (!(Test-Path $file)) { throw "Arquivo obrigatorio ausente: $file" }
+          }
+
+      - name: Instalar dependencias
+        shell: pwsh
+        run: npm install --no-audit --no-fund --foreground-scripts
+
+      - name: Conferir Electron
+        shell: pwsh
+        run: |
+          if (!(Test-Path 'node_modules/electron/dist/electron.exe')) {
+            throw 'Electron.exe ausente. Verifique postinstall / download do Electron.'
+          }
+
+      - name: Gerar instalador Windows
+        shell: pwsh
+        run: npx --no-install electron-builder --win nsis --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Anexar instalador ao resultado da execucao
+        uses: actions/upload-artifact@v4
+        with:
+          name: Souz-Pro-Lyric-v0.6.1-Windows
+          path: |
+            dist/*Setup*.exe
+          if-no-files-found: error
+          retention-days: 14

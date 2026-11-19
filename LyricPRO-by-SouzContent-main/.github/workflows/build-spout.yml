@@ -1,0 +1,75 @@
+name: Compilar electron-spout
+
+# Rode manualmente: aba Actions > "Compilar electron-spout" > Run workflow
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar electron-spout (sem compilar ainda)
+        shell: pwsh
+        run: |
+          mkdir work
+          cd work
+          npm init -y
+          npm install github:fusefactory/electron-spout --ignore-scripts
+
+      - name: Instalar Spout2 via vcpkg
+        shell: pwsh
+        run: |
+          $root = $env:VCPKG_INSTALLATION_ROOT
+          git -C $root pull
+          & "$root\bootstrap-vcpkg.bat" -disableMetrics
+          & "$root\vcpkg.exe" install spout2:x64-windows
+          "VCPKG_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "--- pacotes instalados ---"
+          & "$root\vcpkg.exe" list | Select-String spout
+
+      - name: Compilar para Electron 38.8.6
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          New-Item -ItemType Directory -Force saida | Out-Null
+          Set-Location work/node_modules/electron-spout
+          npx cmake-js rebuild --runtime electron --runtime-version 38.8.6 --arch x64 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE/saida/cmake-log.txt"
+          "cmake-js terminou com codigo: $LASTEXITCODE" | Tee-Object -FilePath "$env:GITHUB_WORKSPACE/saida/cmake-log.txt" -Append
+
+      - name: Coletar resultado
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force saida | Out-Null
+          $pkg = "work/node_modules/electron-spout"
+          "--- arquivos da raiz do pacote ---" | Out-File saida/diagnostico.txt
+          Get-ChildItem $pkg -Force | Select-Object Name | Out-File saida/diagnostico.txt -Append
+          "--- conteudo de build/ ---" | Out-File saida/diagnostico.txt -Append
+          if (Test-Path "$pkg/build") {
+            Get-ChildItem "$pkg/build" -Recurse -File | Select-Object -First 150 FullName | Out-File saida/diagnostico.txt -Append
+          } else { "pasta build NAO existe" | Out-File saida/diagnostico.txt -Append }
+          Copy-Item "$pkg/package.json" saida/package.json -ErrorAction SilentlyContinue
+          Copy-Item "$pkg/CMakeLists.txt" saida/CMakeLists.txt -ErrorAction SilentlyContinue
+          $nodes = Get-ChildItem $pkg -Recurse -Filter *.node -ErrorAction SilentlyContinue
+          if ($nodes) {
+            Copy-Item $nodes[0].FullName saida/electron-spout.node
+            "OK: $($nodes[0].FullName)" | Out-File saida/diagnostico.txt -Append
+          } else {
+            "NENHUM .node gerado" | Out-File saida/diagnostico.txt -Append
+          }
+          Get-Content saida/diagnostico.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: electron-spout-resultado
+          path: saida/
+
+      - name: Falhar se nao houver .node
+        shell: pwsh
+        run: |
+          if (-not (Test-Path saida/electron-spout.node)) { throw "Nenhum .node foi gerado. Veja cmake-log.txt no artefato." }

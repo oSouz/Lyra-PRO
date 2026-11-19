@@ -1,0 +1,62 @@
+{
+  "name": "souz-pro-lyric-desktop",
+  "version": "0.6.1",
+  "private": true,
+  "description": "Souz Pro Lyric Desktop — v0.6.1 com monitoramento Spout2 e animações",
+  "main": "main.cjs",
+  "scripts": {
+    "test": "node --test test/propresenter-bridge.test.cjs",
+    "start": "electron .",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check propresenter-bridge.cjs && node --check app/propresenter-stage.js && node scripts/check-project.cjs",
+    "dist:win": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "productName": "Souz Pro Lyric",
+  "build": {
+    "appId": "br.com.souz.prolyric",
+    "productName": "Souz Pro Lyric",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "propresenter-bridge.cjs",
+      "preload.cjs",
+      "app/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "native/build/Release/souz-spout-sender.exe",
+        "to": "native/souz-spout-sender.exe"
+      },
+      {
+        "from": "native/build/Release/SpoutDX.dll",
+        "to": "native/SpoutDX.dll"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Souz-Pro-Lyric-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Souz Pro Lyric",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

@@ -254,10 +254,6 @@ html.saida .tag,html.saida .hint{display:none!important}
 #souzTelemetry .souzGood{color:#20a66a}#souzTelemetry .souzBad{color:#c88030}
 </style>
 <style>
-#bridgePanel { max-width: 1440px; margin: 12px auto; padding: 0 16px; }
-#bridgePanel form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-#bridgePanel pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
-html.saida #bridgePanel { display: none; }
 </style>
 <script src="propresenter-stage.js"></script>
 <style>
@@ -284,9 +280,6 @@ body { overflow-y: auto; }
 .workspace .center-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .workspace .manual-tools > .cuecard { margin-top: 12px; }
 .center-actions button[aria-pressed="true"] { outline: 2px solid currentColor; }
-#bridgePanel { margin: 0; padding: 12px; }
-#bridgePanel form input { flex: 1 1 170px; }
-#bridgePanel pre { max-height: 100px; overflow: auto; }
 #souzTelemetry { margin: 0 0 8px; }
 html.saida .workspace { display: block; margin: 0; max-width: none; }
 html.saida .workspace > aside, html.saida #slotStage > :not(#stage) { display: none !important; }
@@ -298,19 +291,243 @@ html.saida .workspace #stage { border-radius: 0; }
 @media (max-width: 520px) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
 }
+/* A interface do operador tem profundidade; a saída limpa usa seu próprio fundo. */
+:root[data-theme="dark"] {
+  --bg: #0b0c16; --surface: #181a28; --surface-2: #242638;
+  --fg: #f4f3fb; --fg-2: #b0b0c7; --line: #ffffff1a;
+  --bar: #10121cb8; --accent: #8765dc;
+  --shadow: 0 8px 28px #0003;
+}
+html:not(.saida) body {
+  background:
+    radial-gradient(ellipse at 20% 0%, #7655b925, transparent 47%),
+    radial-gradient(ellipse at 92% 27%, #435a9b22, transparent 50%),
+    var(--bg);
+  background-attachment: fixed;
+}
+.bar {
+  background: var(--bar); backdrop-filter: blur(28px) saturate(145%);
+  border: 1px solid var(--line); border-top: 0; border-radius: 0 0 18px 18px;
+  padding-inline: 16px; box-shadow: 0 12px 30px #0002;
+}
+.brand b { font-weight: 800; }
+.workspace aside { background: color-mix(in srgb, var(--surface) 86%, transparent); }
+.workspace aside h2 { letter-spacing: -.025em; text-transform: none; font-size: 19px; }
+.workspace #stage { outline: 1px solid var(--line); }
+html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
+.preset-library {
+  min-width: 0; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 14px; background: var(--surface);
+}
+.preset-heading h2 {
+  color: var(--fg-2); font-size: 11px; letter-spacing: .09em;
+  text-transform: uppercase; margin: 0 0 6px;
+}
+.preset-rail {
+  display: flex; gap: 5px; padding: 3px; margin-inline: -3px;
+  overflow-x: auto; scrollbar-width: thin;
+}
+.preset-card {
+  flex: 0 0 auto; white-space: nowrap; padding: 5px 8px;
+  border: 1px solid transparent; border-radius: 9px;
+  background: var(--surface-2); color: var(--fg); font: 600 12px/1.5 var(--ui);
+  transition: background .18s ease, border-color .18s ease;
+}
+.preset-card:hover, .preset-card:focus-visible { border-color: var(--accent); }
+.preset-card[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface-2));
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) { .preset-card { transition: none; } }
+</style>
+<style>
+.brand {
+  background: none; border: 0; padding: 4px 6px; border-radius: 9px;
+  cursor: pointer; text-align: left;
+}
+.brand:hover { background: var(--surface-2); }
+.about {
+  color-scheme: dark; color: #f0f6fc; font: 14px/1.5 Inter, "Segoe UI", system-ui, sans-serif;
+  width: min(480px, calc(100% - 32px)); max-height: calc(100dvh - 32px);
+  padding: clamp(18px, 4vh, 32px); border: 1px solid #303b49; border-radius: 24px;
+  background: radial-gradient(ellipse at 50% 0, #12345090, transparent 55%), #0d1117;
+  box-shadow: 0 28px 100px #000a; overflow: auto; text-align: center;
+  opacity: 0; transform: translateY(8px) scale(.985);
+  transition: opacity .18s ease, transform .18s ease, display .18s allow-discrete, overlay .18s allow-discrete;
+}
+.about[open] { opacity: 1; transform: none; }
+.about::backdrop { background: #050911b8; backdrop-filter: blur(8px); }
+@starting-style { .about[open] { opacity: 0; transform: translateY(8px) scale(.985); } }
+#aboutDialog {
+  width: min(920px, calc(100% - 32px)); padding: 0; text-align: left;
+  color: #f4edf9; background: #1a181f; border-color: #403648; border-radius: 14px;
+}
+.about-top, .about-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+}
+.about-top { min-height: 54px; padding: 0 24px; border-bottom: 1px solid #ffffff0d; }
+.about-top h1 { font-size: 13px; font-weight: 500; margin: 0; color: #d5c9df; }
+.about-top button { padding: 4px 9px; background: transparent; color: inherit; font-size: 19px; }
+.about-columns { display: grid; grid-template-columns: 1fr 1fr; }
+.about-identity, .about-story { padding: clamp(24px, 4vw, 44px); min-width: 0; }
+.about-identity { position: relative; isolation: isolate; overflow: hidden; border-inline-end: 1px solid #ffffff0d; }
+.about-identity::before {
+  content: ""; position: absolute; z-index: -1; width: 390px; aspect-ratio: 1;
+  inset: -40px auto auto -40px; opacity: .05; transform: rotate(-12deg);
+  background: url("lyra-brand.png") 50% 86.2% / 482% no-repeat;
+}
+.about-wordmark {
+  width: min(100%, 280px); aspect-ratio: 2.98; margin: 16px 0 26px;
+  background: url("lyra-brand.png") 50% 36.2% / 120% no-repeat;
+  mix-blend-mode: screen;
+  clip-path: polygon(0 0, 100% 0, 100% 90%, 40% 90%, 40% 100%, 0 100%);
+}
+.about-kicker {
+  color: #dec2f0; font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+}
+.about-version { display: flex; align-items: center; gap: 10px; margin-top: 23px; font-size: 12px; }
+.about-badge { padding: 3px 8px; color: #dfb7fb; border: 1px solid #68497d; background: #302439; border-radius: 5px; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; }
+.about-story h2 { margin: 16px 0; font-size: clamp(21px, 3vw, 27px); line-height: 1.25; letter-spacing: -.025em; }
+.about-story p { color: #cbbfd4; max-width: 36ch; }
+.about-footer { padding: 20px 24px; border-top: 1px solid #ffffff0d; background: #151319; flex-wrap: wrap; }
+#aboutDialog .about-footer p { margin: 0; color: #cbbfd4; line-height: 1.75; }
+.about-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#aboutDialog .about-actions button { border-radius: 9px; border-color: #4c4056; background: #292330; color: #f4edf9; }
+#aboutDialog .about-actions button:hover { background: #3a2b46; }
+#aboutDialog .about-actions .about-close { border-color: #d4b1ed; background: #bf99dc; color: #211229; }
+#aboutDialog .about-actions .about-close:hover { background: #d8b5ee; }
+.about-extra { margin: 0; padding: 14px 24px; border-top: 1px solid #ffffff12; color: #e0d2e9; }
+.about-extra p { margin: 4px 0; }
+@media (max-width: 620px) {
+  .about-columns { grid-template-columns: 1fr; }
+  .about-identity { border-inline-end: 0; border-bottom: 1px solid #ffffff0d; }
+}
+.about-card { margin-block: 18px; padding: 14px 16px; background: #111923; border: 1px solid #253244; border-radius: 14px; text-align: left; }
+.about-card h2 { margin: 0 0 4px; font-size: 14px; }
+.about-card p { margin: 0; color: #b4c2d4; }
+.about dl { margin: 14px 0 0; display: grid; gap: 5px; }
+.about dl div { display: flex; justify-content: space-between; gap: 12px; padding-top: 5px; border-top: 1px solid #263241; }
+.about dt { color: #b4c2d4; }
+.about dd { margin: 0; font-weight: 600; text-align: right; }
+.about footer p { margin: 0 0 12px; color: #b4c2d4; font-size: 12px; }
+.about footer button { background: #173c54; border: 1px solid #427ba0; color: #f0f6fc; }
+.about footer button:hover { background: #235878; }
+@media (prefers-reduced-motion: reduce) { .about { transition: none; } }
+</style>
+<style>
+.output-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+.output-toggle {
+  --signal: #94a3b8; --signal-bg: #64748b17;
+  display: grid; grid-template-columns: 19px 1fr 26px; align-items: center; gap: 6px;
+  width: 151px; min-height: 38px; border-radius: 10px; padding: 5px 7px;
+  color: var(--signal); background: var(--signal-bg); border: 1px solid currentColor;
+  font: 700 10px/1.15 var(--ui); text-align: left;
+  transition: background .18s, color .18s, box-shadow .18s;
+}
+.output-toggle svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+.output-toggle strong { font: inherit; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+.output-toggle strong::before { content: ""; background: currentColor; opacity: .3; width: 4px; height: 4px; border-radius: 50%; }
+.output-toggle[data-state="on"] strong::before { opacity: 1; box-shadow: 0 0 6px currentColor; }
+.output-toggle:hover:not(:disabled) { background: color-mix(in srgb, var(--signal) 19%, var(--surface)); }
+.output-toggle[data-state="on"] { box-shadow: inset 0 0 14px var(--signal-bg); }
+#presentationBtn[data-state="on"] { --signal: #22c55e; --signal-bg: #22c55e20; }
+#spoutBtn[data-state="on"] { --signal: #06b6d4; --signal-bg: #06b6d420; }
+#bridgeBtn { --signal: #a683d1; --signal-bg: #48256d48; }
+#bridgeBtn[data-state="on"] { --signal: #d8a6ff; --signal-bg: #9b44dc35; }
+#bridgeBtn[data-state="on"] strong { animation: bridge-pulse 1.9s ease-in-out infinite; }
+@keyframes bridge-pulse { 50% { opacity: .63; text-shadow: 0 0 9px #d8a6ff; } }
+:root[data-theme="light"] .output-toggle { border-color: color-mix(in srgb, var(--signal) 45%, var(--line)); }
+:root[data-theme="light"] #presentationBtn[data-state="on"] { --signal: #137038; }
+:root[data-theme="light"] #spoutBtn[data-state="on"] { --signal: #0c6478; }
+:root[data-theme="light"] #bridgeBtn { --signal: #643c8d; }
+.bridge-dialog { text-align: left; }
+.bridge-dialog h2 { margin: 0; font-size: 21px; }
+.bridge-dialog form:not([method="dialog"]) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 12px; }
+.bridge-dialog form:not([method="dialog"]) label { width: 100%; }
+.bridge-dialog form:not([method="dialog"]) input { flex: 1 1 180px; min-width: 0; }
+.bridge-dialog h3 { margin: 0; font-size: 13px; }
+.bridge-dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 130px; overflow: auto; margin: 4px 0 0; }
+.bridge-dialog footer { display: flex; justify-content: flex-end; }
+@media (prefers-reduced-motion: reduce) { .output-toggle { transition: none; } #bridgeBtn[data-state="on"] strong { animation: none; } }
 </style>
 </head>
 <body>
 
 <header class="bar">
-  <div class="brand"><b>LYRA</b><span>A Souz Content Product</span></div>
+  <button class="brand" id="aboutBtn" type="button" aria-label="Sobre o Lyra" aria-haspopup="dialog"><b>LYRA</b><span>A Souz Content Product</span></button>
   <button type="button" class="theme" id="theme" role="switch" aria-checked="false" aria-label="Modo escuro"><span class="knob"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg></span></button>
   <span class="pill" id="live"><i></i><em id="liveTxt" style="font-style:normal">Tela vazia</em></span>
-  <button class="btn" id="spoutBtn" type="button" hidden>Iniciar Spout2</button>
+  <div class="output-controls" aria-label="Controles de saída">
+    <button class="output-toggle" id="presentationBtn" type="button" data-state="on" aria-pressed="true" title="Ocultar ou restaurar as letras da apresentação">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+      <span>APRESENTAÇÃO</span><strong>ON</strong>
+    </button>
+    <button class="output-toggle" id="spoutBtn" type="button" data-state="off" aria-pressed="false" title="Iniciar a transmissão Spout2" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a10 10 0 0 0 0 14m16-14a10 10 0 0 1 0 14M7 8a6 6 0 0 0 0 8m10-8a6 6 0 0 1 0 8"/><circle cx="12" cy="12" r="2"/></svg>
+      <span>SPOUT2</span><strong>OFF</strong>
+    </button>
+    <button class="output-toggle" id="bridgeBtn" type="button" data-state="off" aria-haspopup="dialog" title="Abrir as configurações do LYRA BRIDGE" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a4 4 0 0 0 6 0l4-4a4 4 0 0 0-6-6l-2 2m2 6a4 4 0 0 0-6 0l-4 4a4 4 0 0 0 6 6l2-2"/></svg>
+      <span>LYRA BRIDGE</span><strong>OFF</strong>
+    </button>
+  </div>
   <button class="btn" id="saidaBtn" type="button">Saída limpa</button>
   <button class="btn" id="fsBtn" type="button">Tela cheia</button>
   <a class="btn" id="updatesLink" href="https://github.com/oSouz/Lyra-PRO/tree/feature/propresenter-bridge" target="_blank" rel="noopener">Atualizações</a>
 </header>
+
+<dialog class="about" id="aboutDialog" aria-labelledby="aboutTitle">
+  <header class="about-top">
+    <h1 id="aboutTitle">Sobre o LYRA</h1>
+    <form method="dialog"><button class="btn" type="submit" aria-label="Fechar">×</button></form>
+  </header>
+  <div class="about-columns">
+    <div class="about-identity">
+      <div class="about-wordmark" role="img" aria-label="LYRA"></div>
+      <div class="about-kicker">A Souz Content Product</div>
+      <div class="about-version" id="aboutVersionRow" hidden>
+        <strong>Versão <span id="aboutVersion"></span></strong>
+        <span class="about-badge">Release</span>
+      </div>
+    </div>
+    <div class="about-story">
+      <div class="about-kicker">Letra. Organização. Projeção.</div>
+      <h2>Suas letras.<br>No tempo da apresentação.</h2>
+      <p>Organize os trechos, dê movimento às palavras e leve cada verso ao vivo, com clareza e controle.</p>
+      <p>Criado por Souz Content.</p>
+    </div>
+  </div>
+  <section class="about-extra" id="aboutCredits" aria-label="Créditos" hidden>
+    <p>LYRA · Professional Lyrics Presentation Software</p>
+    <p>Aplicativo desktop desenvolvido por Souz Content.</p>
+  </section>
+  <section class="about-extra" id="aboutLicenses" aria-label="Licenças" hidden>
+    <p>O Lyra usa Electron e Chromium. Os avisos de licença estão nos arquivos <code>LICENSE.electron.txt</code> e <code>LICENSES.chromium.html</code> da instalação.</p>
+  </section>
+  <footer class="about-footer">
+    <p>© 2026 Souz Content<br>Feito para acompanhar a sua apresentação.</p>
+    <form class="about-actions" method="dialog">
+      <button class="btn" type="button" aria-controls="aboutCredits" aria-expanded="false">Créditos</button>
+      <button class="btn" type="button" aria-controls="aboutLicenses" aria-expanded="false">Licenças</button>
+      <button class="btn about-close" type="submit" autofocus>Fechar</button>
+    </form>
+  </footer>
+</dialog>
+
+<dialog class="about bridge-dialog" id="bridgePanel" aria-labelledby="bridgeTitle">
+  <h2 id="bridgeTitle">LYRA BRIDGE</h2>
+  <p class="note">Recebe as letras do ProPresenter 7 pela rede.</p>
+  <form id="bridgeForm">
+    <label for="bridgeAddress">Endereço HTTP do ProPresenter</label>
+    <input class="field" id="bridgeAddress" placeholder="192.168.1.20:1025" required>
+    <button class="btn pri" type="submit">Conectar</button>
+    <button class="btn" type="button" id="bridgeStop" disabled>Desconectar</button>
+  </form>
+  <p class="note" id="bridgeStatus" role="status">Desconectado</p>
+  <label><input type="checkbox" id="bridgeExit"> Aguardar efeito de saída antes de trocar</label>
+  <div class="about-card"><h3>Próximo slide</h3><pre id="bridgeNext">—</pre></div>
+  <footer><form method="dialog"><button class="btn" type="submit">Fechar</button></form></footer>
+</dialog>
 
 <main class="view workspace" id="viewStage">
   <aside class="card" aria-labelledby="textHeading">
@@ -352,19 +569,10 @@ html.saida .workspace #stage { border-radius: 0; }
       <button class="btn danger" id="clearEffects" type="button">Limpar efeito</button>
       <button class="btn danger" id="clearLetter" type="button" aria-pressed="false">Limpar letra</button>
     </div>
-<details class="card" id="bridgePanel" hidden>
-  <summary>ProPresenter Bridge</summary>
-  <form id="bridgeForm">
-    <label for="bridgeAddress">Endereço HTTP do Mac</label>
-    <input id="bridgeAddress" placeholder="192.168.1.20:1025" required>
-    <button class="btn" type="submit">Conectar</button>
-    <button class="btn" type="button" id="bridgeStop" disabled>Desconectar</button>
-    <span id="bridgeStatus" role="status">Modo manual</span>
-  </form>
-  <label><input type="checkbox" id="bridgeExit"> Aguardar efeito de saída antes de trocar</label>
-  <p>Próximo slide</p>
-  <pre id="bridgeNext">—</pre>
-</details>
+    <section class="preset-library" aria-labelledby="presetHeading">
+      <div class="preset-heading"><h2 id="presetHeading">Estilos prontos</h2></div>
+      <div class="preset-rail" id="presets"></div>
+    </section>
     <details class="card manual-tools" id="manualTools">
       <summary>Letras manuais</summary>
     <div class="transport">
@@ -432,7 +640,6 @@ html.saida .workspace #stage { border-radius: 0; }
       <div class="grp"><span class="lbl">Modelos</span><div class="chips" id="wPresets"></div></div>
       <p class="note">Com esta aba aberta, arraste a prévia: para os lados muda a quantidade de ondas, para cima e para baixo muda a altura.</p>
     </details>
-    <details class="pane"><summary>Estilos prontos</summary><div class="chips" id="presets"></div></details>
     <div class="row"><button class="btn sm" id="fxReplay" type="button">Repetir animação</button><button class="btn sm" id="fxSurprise" type="button">Surpresa</button></div>
   </aside>
 </main>
@@ -734,11 +941,18 @@ html.saida .workspace #stage { border-radius: 0; }
   function fillSelect(id,list){$(id).innerHTML=list.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>'}).join('')}
   function buildUI(){
     fillSelect('#entry',ENTRIES);fillSelect('#loop',LOOPS);fillSelect('#exit',EXITS);
-    $('#presets').innerHTML=Object.keys(PRESETS).map(function(k){return '<button type="button" class="chip" data-k="'+k+'">'+PRESETS[k].n+'</button>'}).join('');
+    Object.entries(PRESETS).forEach(function([key,preset]){
+      var button=document.createElement('button');
+      button.type='button';
+      button.className='preset-card';
+      button.dataset.k=key;
+      button.textContent=preset.n;
+      $('#presets').append(button);
+    });
     $('#wPresets').innerHTML=Object.keys(WPRESETS).map(function(k){return '<button type="button" class="chip" data-k="'+k+'">'+WPRESETS[k].n+'</button>'}).join('');
   }
   function syncUI(){
-    document.querySelectorAll('#presets .chip').forEach(function(b){b.classList.toggle('on',b.dataset.k===S.preset)});
+    document.querySelectorAll('#presets .preset-card').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.k===S.preset))});
     [['#split','split'],['#order','order'],['#mode','mode'],['#bg','bg']].forEach(function(p){
       document.querySelectorAll(p[0]+' button').forEach(function(b){b.classList.toggle('on',b.dataset.v===S[p[1]])});
     });
@@ -783,15 +997,38 @@ html.saida .workspace #stage { border-radius: 0; }
     change({entry:'none',loop:'none',exit:'none',mb:false,glow:0,eco:0,shadow:0,stroke:0,
       warp:Object.assign({},S.warp,{on:false})});
   };
-  $('#clearLetter').onclick=function(){
+  function setControlState(button,state){
+    button.dataset.state=state;
+    button.querySelector('strong').textContent=state==='on'?'ON':'OFF';
+    if(button.hasAttribute('aria-pressed'))button.setAttribute('aria-pressed',String(state==='on'));
+  }
+  function togglePresentation(){
     letterCleared=!letterCleared;
-    this.setAttribute('aria-pressed',String(letterCleared));
-    this.textContent=letterCleared?'Restaurar letra':'Limpar letra';
+    var clearLetter=$('#clearLetter');
+    clearLetter.setAttribute('aria-pressed',String(letterCleared));
+    clearLetter.textContent=letterCleared?'Restaurar letra':'Limpar letra';
+    setControlState($('#presentationBtn'),letterCleared?'off':'on');
     renderStage();
-  };
+  }
+  $('#clearLetter').onclick=togglePresentation;
+  $('#presentationBtn').onclick=togglePresentation;
   $('#fxReplay').onclick=function(){if(!bridgeSlide&&idx<0)go(0);else{blankOn=false;renderStage()}};
   $('#fxSurprise').onclick=surprise;
-  $('#presets').addEventListener('click',function(e){var b=e.target.closest('.chip');if(b)applyPreset(b.dataset.k)});
+  var presetsRail=$('#presets');
+  presetsRail.addEventListener('click',function(e){var b=e.target.closest('.preset-card');if(b)applyPreset(b.dataset.k)});
+  presetsRail.addEventListener('keydown',function(e){
+    var direction=e.key==='ArrowLeft'?-1:e.key==='ArrowRight'?1:0;
+    var card=e.target.closest('.preset-card');
+    if(!direction||!card)return;
+    e.preventDefault();
+    var adjacent=direction<0?card.previousElementSibling:card.nextElementSibling;
+    if(!adjacent)return;
+    adjacent.focus({preventScroll:true});
+    var cardBounds=adjacent.getBoundingClientRect(), railBounds=presetsRail.getBoundingClientRect();
+    if(cardBounds.left<railBounds.left || cardBounds.right>railBounds.right){
+      presetsRail.scrollBy({left:direction*(cardBounds.width+5),behavior:reduced?'auto':'smooth'});
+    }
+  });
   $('#wPresets').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;var p=Object.assign({},WPRESETS[b.dataset.k]);delete p.n;p.on=true;changeWarp(p)});
   [['#split','split'],['#order','order'],['#mode','mode'],['#bg','bg']].forEach(function(p){
     $(p[0]).addEventListener('click',function(e){var b=e.target.closest('button');if(b){var o={};o[p[1]]=b.dataset.v;change(o)}});
@@ -868,7 +1105,33 @@ html.saida .workspace #stage { border-radius: 0; }
   try{new ResizeObserver(function(){measure();if(S.loop==='gridscroll')syncGrid()}).observe($('#stage'))}catch(e){}
   try{document.fonts.ready.then(function(){measure();syncGrid()})}catch(e){}
 
+  var aboutDialog=$('#aboutDialog');
+  var appVersion=window.souzDesktop?.version;
+  if(appVersion){
+    $('#aboutVersion').textContent=appVersion;
+    $('#aboutVersionRow').hidden=false;
+  }
+  $('#aboutBtn').onclick=function(){aboutDialog.showModal()};
+  var aboutOptions=aboutDialog.querySelectorAll('[aria-controls]');
+  function showAboutSection(id){
+    aboutOptions.forEach(function(button){
+      var panel=document.getElementById(button.getAttribute('aria-controls'));
+      panel.hidden=panel.id!==id;
+      button.setAttribute('aria-expanded',String(!panel.hidden));
+    });
+  }
+  aboutOptions.forEach(function(button){
+    button.onclick=function(){
+      showAboutSection(this.getAttribute('aria-expanded')==='true'?null:this.getAttribute('aria-controls'));
+    };
+  });
+  aboutDialog.addEventListener('close',function(){
+    showAboutSection(null);
+    $('#aboutBtn').focus({preventScroll:true});
+  });
+
   document.addEventListener('keydown',function(e){
+    if(aboutDialog.open||$('#bridgePanel').open)return;
     var t=e.target,typing=t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT');
     if(typing||t?.closest?.('button,summary,a,#bridgePanel')||e.metaKey||e.ctrlKey||e.altKey)return;
     var k=e.key;
@@ -883,8 +1146,7 @@ html.saida .workspace #stage { border-radius: 0; }
 
   var root=document.documentElement;
   function applyTheme(t){root.dataset.theme=t;$('#theme').classList.toggle('dark',t==='dark');$('#theme').setAttribute('aria-checked',t==='dark')}
-  var th=load('spl.theme',null);
-  if(!th){try{th=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){th='light'}}
+  var th=load('spl.theme','dark');
   applyTheme(th);
   $('#theme').onclick=function(){var t=root.dataset.theme==='dark'?'light':'dark';applyTheme(t);save('spl.theme',t)};
 
@@ -892,6 +1154,7 @@ html.saida .workspace #stage { border-radius: 0; }
   if(window.souzDesktop){
     var bridgePanel = $('#bridgePanel');
     var bridgeStatus = $('#bridgeStatus');
+    var bridgeBtn = $('#bridgeBtn');
     var bridgeStop = $('#bridgeStop');
     window.souzDesktop.onBridge(function(state) {
       var previous=bridgeSlide;
@@ -903,9 +1166,11 @@ html.saida .workspace #stage { border-radius: 0; }
         prepareBridge();
       }
       if (window.souzDesktop.role === 'output') return;
+      setControlState(bridgeBtn,state?.status==='connected'?'on':'off');
+      bridgeBtn.title='Abrir o LYRA BRIDGE · '+(state?.status==='connected'?'conectado':state?'aguardando conexão':'desconectado');
       bridgeStop.disabled = !state;
       if (!state) {
-        bridgeStatus.textContent = 'Modo manual';
+        bridgeStatus.textContent = 'Desconectado';
       } else if (state.status === 'connected') {
         bridgeStatus.textContent = state.current.trim() ? 'Conectado' : 'Conectado · slide sem texto';
       } else if (state.status === 'connecting') {
@@ -916,7 +1181,9 @@ html.saida .workspace #stage { border-radius: 0; }
       $('#bridgeNext').textContent = state?.next || '—';
     });
     if (window.souzDesktop.role === 'control') {
-      bridgePanel.hidden = false;
+      bridgeBtn.hidden = false;
+      bridgeBtn.onclick=function(){bridgePanel.showModal()};
+      bridgePanel.addEventListener('close',function(){bridgeBtn.focus({preventScroll:true})});
       $('#bridgeExit').checked=!!S.bridgeExit;
       $('#bridgeExit').onchange=function(){change({bridgeExit:this.checked},true)};
       var bridgeAddress = $('#bridgeAddress');
@@ -963,12 +1230,28 @@ html.saida .workspace #stage { border-radius: 0; }
     }else{
       var spoutBtn=$('#spoutBtn'),spoutStatus=$('#spoutStatus');
       spoutBtn.hidden=false;spoutStatus.hidden=false;
-      var busy=false,active=false;
-      function status(s){active=!!s.active;spoutBtn.textContent=active?'Parar Spout2':'Iniciar Spout2';spoutStatus.textContent=s.message||(active?'Spout ligado':'Spout desligado');spoutStatus.classList.toggle('on',active)}
+      var busy=false,requested=false;
+      function status(s){
+        requested=Boolean(s.requested);
+        setControlState(spoutBtn,s.ready?'on':'off');
+        spoutBtn.title=requested?'Parar a transmissão Spout2':'Iniciar a transmissão Spout2';
+        spoutStatus.textContent=s.message;
+        spoutStatus.classList.toggle('on',Boolean(s.ready));
+      }
       spoutBtn.onclick=async function(){
-        if(busy)return;busy=true;spoutBtn.disabled=true;
-        try{status(await(window.souzDesktop.toggleSpout(!active)))}catch(e){status({active:false,message:'Falha: '+e.message})}
-        finally{busy=false;spoutBtn.disabled=false}
+        if(busy)return;
+        busy=true;
+        spoutBtn.disabled=true;
+        const enable=!requested;
+        try{
+          var result=await window.souzDesktop.toggleSpout(enable);
+          if(enable&&!result.active)status(result);
+        }catch(e){
+          spoutStatus.textContent='Falha: '+e.message;
+        }finally{
+          busy=false;
+          spoutBtn.disabled=false;
+        }
       };
       window.souzDesktop.onStatus(status);
       // Monitor operacional, sem alterar o mecanismo de letras ou os controles existentes.
@@ -976,7 +1259,7 @@ html.saida .workspace #stage { border-radius: 0; }
         var line=document.createElement('div');line.id='souzTelemetry';
         line.setAttribute('aria-label','Monitor da saída Spout2');
         line.innerHTML='<span id="souzFps">Captura: —</span><span id="souzPipe">Pipe: —</span><span id="souzNative">Spout: —</span><span id="souzFrames">Descartes: —</span><span id="souzLink">Saída: aguardando</span>';
-        $('#slotStage').insertBefore(line,$('#bridgePanel'));
+        $('#slotStage').insertBefore(line,$('#manualTools'));
         if(window.souzDesktop.onMetrics)window.souzDesktop.onMetrics(function(m){
           var fps=document.getElementById('souzFps'),pipe=document.getElementById('souzPipe'),nat=document.getElementById('souzNative'),drop=document.getElementById('souzFrames'),link=document.getElementById('souzLink');
           if(!fps||!pipe||!nat||!drop||!link)return;

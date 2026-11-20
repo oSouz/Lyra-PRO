@@ -87,7 +87,10 @@ function receiveNativeStats(msg){
 }
 function scheduleRestart(){
   if(!desiredSpout || stopping || restartTimer || restartAttempts>=MAX_RESTARTS) {
-    if(restartAttempts>=MAX_RESTARTS) report('Spout2 interrompido. Reinicie pelo botão para tentar novamente.',false);
+    if(restartAttempts>=MAX_RESTARTS) {
+      desiredSpout=false;
+      report('Spout2 interrompido. Reinicie pelo botão para tentar novamente.',false);
+    }
     return;
   }
   restartAttempts++;
@@ -104,7 +107,7 @@ function report(message, active = !!sender) {
   lastStatus = message;
   console.log('[SOUZ]', message);
   if (control && !control.isDestroyed()) {
-    control.webContents.send('souz:status', {active, message});
+    control.webContents.send('souz:status', {active, ready:active&&nativeReady, requested:desiredSpout, message});
   }
 }
 let bridgeConnection;
@@ -129,7 +132,7 @@ function createControl() {
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:false}
   });
   control.webContents.on('did-finish-load', () => {
-    control.webContents.send('souz:status',{active:!!sender,message:lastStatus||'Spout desligado'});
+    control.webContents.send('souz:status',{active:!!sender,ready:!!sender&&nativeReady,requested:desiredSpout,message:lastStatus||'Spout desligado'});
     control.webContents.send('souz:bridge-state', bridgeState);
   });
   control.webContents.setWindowOpenHandler(({url}) => {
@@ -237,6 +240,7 @@ function createOutput() {
 }
 function stopSender() {
   desiredSpout=false;
+  nativeReady=false;
   stopping=true;
   if(restartTimer){clearTimeout(restartTimer);restartTimer=null;}
   restartAttempts=0;
@@ -269,6 +273,7 @@ function startSender() {
   let pendingLine='';
   proc.stderr.setEncoding('utf8');
   proc.stderr.on('data', chunk => {
+    if(sender!==proc)return;
     errors=(errors+chunk).slice(-1500);
     pendingLine+=chunk;
     const lines=pendingLine.split(/\r?\n/);
@@ -285,10 +290,11 @@ function startSender() {
   });
   proc.stdin.on('drain',()=>{if(sender===proc)writable=true;});
   proc.stdin.on('error',e=>{if (!stopping) report('Pipe Spout: '+e.message,false);});
-  proc.on('error',e=>{if(sender===proc){sender=null;scheduleRestart();}report('Falha ao iniciar Spout: '+e.message,false);});
+  proc.on('error',e=>{if(sender!==proc)return;sender=null;nativeReady=false;scheduleRestart();report('Falha ao iniciar Spout: '+e.message,false);});
   proc.on('exit',(code,signal)=>{
     if(serial!==senderSerial || sender!==proc) return;
     sender=null;
+    nativeReady=false;
     writable=false;busy=false;stopPaintTimer();
     if (!stopping) {
       report(`Emissor encerrou (${code??signal}). ${errors.slice(-350)}`,false);

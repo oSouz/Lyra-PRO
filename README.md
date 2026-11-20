@@ -44,10 +44,10 @@ A prévia funciona mesmo antes de compilar o emissor. Se o npm bloquear o
 script de instalação do Electron, execute `node node_modules/electron/install.js`
 antes de iniciar o aplicativo.
 
-1. No Lyra, abra **ProPresenter Bridge**, informe `IP:porta` e clique em
+1. No Lyra, clique em **LYRA BRIDGE**, informe `IP:porta` e clique em
    **Conectar**. O palco mostra o slide atual e o painel mostra o próximo.
    **Desconectar** volta ao modo manual.
-2. Clique em **Iniciar Spout2** e aguarde a confirmação do emissor. A saída
+2. Clique em **SPOUT2 OFF** e aguarde a confirmação do emissor. A saída
    usa a fonte **Lyra**, em 1920 × 1080.
 3. No Arena, arraste essa fonte de **Sources** para um clipe em uma camada
    acima do fundo, acione o clipe e confira a transparência, inclusive nas
@@ -72,7 +72,7 @@ bloco de texto, com suas quebras de linha.
 
 Por padrão, a próxima letra entra assim que a API confirma a troca. Para
 rodar a animação de saída antes da troca, selecione o efeito de saída e
-marque **Aguardar efeito de saída antes de trocar** no Bridge. Essa opção
+marque **Aguardar efeito de saída antes de trocar** na janela **LYRA BRIDGE**. Essa opção
 adiciona tempo à troca. Slides sem letra e perda de conexão limpam a saída
 assim que detectados, inclusive com a opção ligada.
 

@@ -451,6 +451,54 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
 @media (prefers-reduced-motion: reduce) { .output-toggle { transition: none; } #bridgeBtn[data-state="on"] strong { animation: none; } }
 </style>
 <style>
+:root[data-theme="dark"] {
+  --bg: #111114; --surface: #1b1b20; --surface-2: #27262e;
+  --bar: #17171ce0; --accent: #bd9add; --accent-fg: #211829;
+}
+html:not(.saida)[data-theme="dark"] body {
+  background: radial-gradient(ellipse at 19% 0%, #9562c313, transparent 52%), var(--bg);
+  background-attachment: fixed;
+}
+</style>
+<style>
+.workspace .thumbnail-picker { padding: 0; border: 1px solid var(--line); border-radius: 12px; }
+.thumbnail-picker summary {
+  display: grid; grid-template-columns: 1fr minmax(0, auto) 10px; align-items: center;
+  gap: 8px; padding: 10px; font-weight: 600; list-style: none; border-radius: 12px;
+}
+.thumbnail-picker summary::-webkit-details-marker { display: none; }
+.thumbnail-picker summary::after {
+  content: ""; width: 6px; height: 6px; border-right: 1px solid; border-bottom: 1px solid;
+  transform: rotate(45deg); justify-self: end; margin-top: -4px; color: var(--fg-2);
+}
+.thumbnail-picker[open] summary::after { transform: rotate(225deg); margin-top: 4px; }
+.thumbnail-selection { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14ch; color: var(--fg-2); font-size: 11px; }
+.thumbnail-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 6px;
+  max-height: 250px; overflow: auto; padding: 4px 7px 7px; scrollbar-width: thin;
+}
+.workspace .thumbnail-picker > .thumbnail-grid { margin-top: 0; }
+.thumbnail-option {
+  border: 1px solid var(--line); border-radius: 8px; color: var(--fg); background: var(--surface-2);
+  display: grid; gap: 4px; place-items: center; align-content: start; padding: 5px; min-width: 0;
+  font-size: 11px; overflow-wrap: anywhere;
+}
+.thumbnail-option[aria-pressed="true"], .thumbnail-option:hover { border-color: var(--accent); }
+.thumbnail-art {
+  display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9;
+  overflow: hidden; background: var(--bg); border-radius: 5px; color: #bd9add;
+}
+.thumbnail-sample {
+  display: block; white-space: nowrap; font-weight: 700; font-size: 21px;
+  --tc: #bd9add; --gc: #d69bff; --mb: 0; --rx: -.9; --ry: -.4; --rr: 20;
+}
+.thumbnail-option:is(:hover,:focus-visible) .thumbnail-sample {
+  animation: var(--thumbnail-animation, none) 1.2s ease-in-out infinite;
+}
+@keyframes thumbnail-grid-scroll { from { transform: translateX(-40%); } to { transform: translateX(40%); } }
+@media (prefers-reduced-motion: reduce) { .thumbnail-option:is(:hover,:focus-visible) .thumbnail-sample { animation: none; } }
+</style>
+<style>
 .brand {
   position: relative; display: grid; gap: 3px;
   padding: 4px 6px 4px 41px;
@@ -546,8 +594,8 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
   <aside class="card" aria-labelledby="textHeading">
     <h2 id="textHeading">Texto</h2>
     <div class="pane" id="paneText">
-      <div class="grp"><label for="font">Fonte</label>
-        <select class="field" id="font">
+      <div class="grp"><label for="font" hidden>Fonte</label>
+        <select class="field" id="font" hidden>
           <option value="sys">Sistema</option><option value="mont">Montserrat</option><option value="bebas">Bebas Neue</option><option value="anton">Anton</option><option value="play">Playfair Display</option>
         </select></div>
       <div class="grp"><label for="size">Tamanho <span id="sizeV"></span></label><input type="range" id="size" min="3" max="12" step="0.25"></div>
@@ -617,9 +665,9 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
   <aside class="card" aria-labelledby="animationHeading">
     <h2 id="animationHeading">Animação</h2>
     <div class="pane" id="paneAnim">
-      <div class="grp"><label for="entry">Entrada</label><select class="field" id="entry"></select></div>
-      <div class="grp"><label for="loop">Loop</label><select class="field" id="loop"></select></div>
-      <div class="grp"><label for="exit">Saída</label><select class="field" id="exit"></select></div>
+      <div class="grp"><label for="entry" hidden>Entrada</label><select class="field" id="entry" hidden></select></div>
+      <div class="grp"><label for="loop" hidden>Loop</label><select class="field" id="loop" hidden></select></div>
+      <div class="grp"><label for="exit" hidden>Saída</label><select class="field" id="exit" hidden></select></div>
       <div class="card" id="gridControls" hidden style="background:var(--surface-2);box-shadow:none;padding:12px;border-radius:14px">
         <h2 style="margin-bottom:10px">Grid Scroll · Loop infinito</h2>
         <div class="grp"><label for="gridText">Palavra ou frase (opcional)</label><input class="field" id="gridText" type="text" placeholder="Usar a linha atual da música"></div>
@@ -952,8 +1000,67 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
 
   /* ===== controles ===== */
   function fillSelect(id,list){$(id).innerHTML=list.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>'}).join('')}
+  var thumbnailPickers={};
+  function buildThumbnailPicker(key, title, animationPrefix){
+    var select=$('#'+key), picker=document.createElement('details');
+    var summary=document.createElement('summary'), selected=document.createElement('span');
+    var grid=document.createElement('div');
+    picker.className='thumbnail-picker';
+    picker.setAttribute('name','lyra-thumbnail-picker');
+    selected.className='thumbnail-selection';
+    summary.append(title,selected);
+    grid.className='thumbnail-grid';
+    Array.from(select.options).forEach(function(option){
+      var button=document.createElement('button'), art=document.createElement('span');
+      var sample=document.createElement('span');
+      button.type='button';button.className='thumbnail-option';button.dataset.value=option.value;
+      art.className='thumbnail-art';art.setAttribute('aria-hidden','true');
+      sample.className='thumbnail-sample';sample.textContent='Aa';
+      if(key==='font'){
+        sample.style.fontFamily=FONTS[option.value].f;
+        sample.style.fontWeight=FONTS[option.value].w;
+      }else if(option.value!=='none'){
+        var animation=option.value==='gridscroll'?'thumbnail-grid-scroll':animationPrefix+option.value;
+        sample.style.setProperty('--thumbnail-animation',animation);
+        if(option.value==='gridscroll')sample.textContent='Aa Aa Aa';
+      }
+      art.append(sample);button.append(art,option.textContent);
+      button.onclick=function(){
+        select.value=option.value;
+        select.dispatchEvent(new Event('change'));
+        picker.open=false;
+        summary.focus({preventScroll:true});
+      };
+      grid.append(button);
+    });
+    picker.append(summary,grid);
+    select.after(picker);
+    picker.addEventListener('keydown',function(event){
+      if(event.key!=='Escape'||!picker.open)return;
+      event.preventDefault();event.stopPropagation();picker.open=false;summary.focus();
+    });
+    thumbnailPickers[key]={picker:picker,selected:selected};
+  }
+  document.addEventListener('pointerdown',function(event){
+    Object.values(thumbnailPickers).forEach(function(item){
+      if(item.picker.open&&!item.picker.contains(event.target))item.picker.open=false;
+    });
+  });
+  function syncThumbnails(){
+    Object.entries(thumbnailPickers).forEach(function([key,item]){
+      var select=$('#'+key);
+      item.selected.textContent=select.selectedOptions[0]?.textContent||'';
+      item.picker.querySelectorAll('.thumbnail-option').forEach(function(button){
+        button.setAttribute('aria-pressed',String(button.dataset.value===select.value));
+      });
+    });
+  }
   function buildUI(){
     fillSelect('#entry',ENTRIES);fillSelect('#loop',LOOPS);fillSelect('#exit',EXITS);
+    buildThumbnailPicker('entry','Entrada','e-');
+    buildThumbnailPicker('loop','Loop','l-');
+    buildThumbnailPicker('exit','Saída','x-');
+    buildThumbnailPicker('font','Fonte');
     Object.entries(PRESETS).forEach(function([key,preset]){
       var button=document.createElement('button');
       button.type='button';
@@ -971,6 +1078,7 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
     });
     document.querySelectorAll('#wDir button').forEach(function(b){b.classList.toggle('on',b.dataset.v===S.warp.dir)});
     $('#entry').value=S.entry;$('#loop').value=S.loop;$('#exit').value=S.exit;$('#font').value=S.font;
+    syncThumbnails();
     $('#gridControls').hidden=S.loop!=='gridscroll';
     $('#gridFontSize').value=S.grid.fontSize;$('#gridFontSizeNumber').value=S.grid.fontSize;$('#gridFontSizeV').textContent=S.grid.fontSize+' px';
     $('#gridText').value=S.grid.text;$('#gridSpeed').value=S.grid.speed;$('#gridLanes').value=S.grid.lanes;$('#gridGap').value=S.grid.gap;$('#gridWordGap').value=S.grid.wordGap;

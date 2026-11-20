@@ -7,7 +7,6 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Montserrat:wght@500;700;800&family=Playfair+Display:wght@600;700&display=swap">
 <style>
-/* Layout: barra translúcida; aba Palco em tela única (músicas | palco | linhas); aba Efeitos (prévia | controles em 3 sub-abas). Visual Apple. */
 :root{
   --bg:#f5f5f7; --surface:#ffffff; --surface-2:#f0f0f3; --fg:#1d1d1f; --fg-2:#6e6e73;
   --line:rgba(0,0,0,.1); --accent:#0071e3; --accent-fg:#ffffff; --good:#28a745; --warn:#d93025;
@@ -218,25 +217,16 @@ input[type=color]{width:100%;height:36px;border:0;border-radius:10px;background:
 
 /* ===== telas ===== */
 .view{flex:1;min-height:0;width:100%;max-width:1600px;margin:14px auto 0;display:grid;gap:16px;align-items:stretch}
-#viewStage{grid-template-columns:240px minmax(0,1fr) 340px}
-#viewFx{grid-template-columns:minmax(0,1fr) 400px}
 .view>*{min-height:0;min-width:0}
 .card.fill{display:flex;flex-direction:column;flex:1}
 .songs{overflow:auto;flex:1;min-height:0}
-#viewStage .stage{width:min(100%,calc((100dvh - 262px)*16/9));margin-inline:auto}
-#viewFx .stage{width:min(100%,calc((100dvh - 330px)*16/9));margin-inline:auto}
-.stage:fullscreen,#viewStage .stage:fullscreen,#viewFx .stage:fullscreen{width:100vw;margin:0}
 .cuecard{display:flex;flex-direction:column}
 #cuesPane:not([hidden]),#editPane:not([hidden]){display:flex;flex-direction:column;flex:1;min-height:0}
 .cues{flex:1;min-height:0;overflow:auto;margin:10px -6px 0;padding:0 6px}
 #editPane textarea.field{flex:1;min-height:0;resize:none;margin-top:8px}
-.fxcard{overflow:auto}
-@media (max-width:1100px){#viewStage{grid-template-columns:200px minmax(0,1fr) 280px}#viewFx{grid-template-columns:minmax(0,1fr) 340px}}
 @media (max-width:860px){
   body{overflow:auto;height:auto;min-height:100%}
   .view{display:flex;flex-direction:column;flex:none}
-  #viewStage .stage,#viewFx .stage{width:100%}
-  #viewStage>.col:nth-child(2){order:-1}
   .cues{max-height:360px;flex:none}
   .songs{max-height:220px}
   #editPane textarea.field{min-height:260px}
@@ -248,7 +238,7 @@ input[type=color]{width:100%;height:36px;border:0;border-radius:10px;background:
 html.saida,html.saida body{background:transparent!important}
 html.saida body{padding:0;overflow:hidden;display:block}
 html.saida body::before{display:none}
-html.saida .bar,html.saida #viewStage>aside,html.saida #viewStage>.cuecard,html.saida #slotStage>.transport,html.saida #slotStage>.keys,html.saida #viewFx{display:none!important}
+html.saida .bar{display:none!important}
 html.saida .view{display:block;margin:0;max-width:none;width:auto}
 html.saida #slotStage{display:block}
 html.saida .stage{position:fixed;inset:0;width:100vw!important;height:100vh!important;aspect-ratio:auto;border-radius:0;margin:0!important;box-shadow:none;z-index:50}
@@ -270,21 +260,99 @@ html.saida .tag,html.saida .hint{display:none!important}
 html.saida #bridgePanel { display: none; }
 </style>
 <script src="propresenter-stage.js"></script>
+<style>
+body { overflow-y: auto; }
+.bar { gap: 10px; padding-block: 10px; }
+.brand { margin-inline-end: auto; display: grid; gap: 0; line-height: 1.08; }
+#updatesLink { text-decoration: none; color: inherit; }
+.workspace aside { border: 1px solid var(--line); }
+.workspace aside h2 { color: var(--fg); font-size: 14px; font-weight: 750; letter-spacing: .07em; }
+.workspace .pane details, #paneWarp { padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
+.workspace .pane details > .grp, #paneWarp > .grp { margin-top: 12px; }
+.workspace .seg { flex-wrap: wrap; }
+.workspace .songs, .workspace .cues { max-height: 260px; }
+.workspace #editPane textarea.field { min-height: 180px; resize: vertical; }
+.brand b { font-size: 25px; letter-spacing: .08em; color: #b894ef; }
+.brand span { letter-spacing: .11em; font-size: 10px; text-transform: uppercase; }
+.workspace { display: grid; grid-template-columns: minmax(185px, .9fr) minmax(0, 3.5fr) minmax(220px, 1fr); gap: 12px; align-items: start; }
+.workspace > * { min-width: 0; }
+.workspace #stage { width: 100%; margin: 0; border-radius: 22px; }
+.workspace #stage:fullscreen { width: 100vw; height: 100vh; border-radius: 0; }
+.workspace .pane { margin-top: 12px; }
+.workspace details > summary { cursor: pointer; }
+.workspace details > summary + * { margin-top: 10px; }
+.workspace .center-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.workspace .manual-tools > .cuecard { margin-top: 12px; }
+.center-actions button[aria-pressed="true"] { outline: 2px solid currentColor; }
+#bridgePanel { margin: 0; padding: 12px; }
+#bridgePanel form input { flex: 1 1 170px; }
+#bridgePanel pre { max-height: 100px; overflow: auto; }
+#souzTelemetry { margin: 0 0 8px; }
+html.saida .workspace { display: block; margin: 0; max-width: none; }
+html.saida .workspace > aside, html.saida #slotStage > :not(#stage) { display: none !important; }
+html.saida .workspace #stage { border-radius: 0; }
+@media (max-width: 860px) {
+  .workspace { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #slotStage { grid-column: 1 / -1; grid-row: 1; }
+}
+@media (max-width: 520px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
 </head>
 <body>
 
 <header class="bar">
-  <div class="brand"><b>Lyra</b><span>Letras ao vivo</span></div>
+  <div class="brand"><b>LYRA</b><span>A Souz Content Product</span></div>
   <button type="button" class="theme" id="theme" role="switch" aria-checked="false" aria-label="Modo escuro"><span class="knob"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg></span></button>
-  <div class="seg tabs" id="views"><button type="button" data-v="stage" class="on">Palco</button><button type="button" data-v="fx">Efeitos</button></div>
   <span class="pill" id="live"><i></i><em id="liveTxt" style="font-style:normal">Tela vazia</em></span>
   <button class="btn" id="spoutBtn" type="button" hidden>Iniciar Spout2</button>
-  <span id="spoutStatus" class="pill" hidden>Spout desligado</span>
   <button class="btn" id="saidaBtn" type="button">Saída limpa</button>
   <button class="btn" id="fsBtn" type="button">Tela cheia</button>
+  <a class="btn" id="updatesLink" href="https://github.com/oSouz/Lyra-PRO/tree/feature/propresenter-bridge" target="_blank" rel="noopener">Atualizações</a>
 </header>
 
-<details id="bridgePanel" hidden>
+<main class="view workspace" id="viewStage">
+  <aside class="card" aria-labelledby="textHeading">
+    <h2 id="textHeading">Texto</h2>
+    <div class="pane" id="paneText">
+      <div class="grp"><label for="font">Fonte</label>
+        <select class="field" id="font">
+          <option value="sys">Sistema</option><option value="mont">Montserrat</option><option value="bebas">Bebas Neue</option><option value="anton">Anton</option><option value="play">Playfair Display</option>
+        </select></div>
+      <div class="grp"><label for="size">Tamanho <span id="sizeV"></span></label><input type="range" id="size" min="3" max="12" step="0.25"></div>
+      <div class="grp"><label for="track">Espaçamento <span id="trackV"></span></label><input type="range" id="track" min="-0.03" max="0.2" step="0.005"></div>
+      <div class="grp colors">
+        <label for="tc">Texto<input type="color" id="tc"></label>
+        <label for="gc">Destaque e brilho<input type="color" id="gc"></label>
+      </div>
+      <details><summary>Acabamento do texto</summary>
+      <div class="grp switch"><span class="lbl">Caixa alta</span><button type="button" id="caps" aria-label="Caixa alta"></button></div>
+      <div class="grp"><label for="stroke">Contorno <span id="strokeV"></span></label><input type="range" id="stroke" min="0" max="0.08" step="0.002"></div>
+      <div class="grp"><label for="glow">Brilho <span id="glowV"></span></label><input type="range" id="glow" min="0" max="2" step="0.05"></div>
+      <div class="grp"><label for="shadow">Sombra <span id="shadowV"></span></label><input type="range" id="shadow" min="0" max="1" step="0.05"></div>
+      <div class="grp"><label for="eco">Eco <span id="ecoV"></span></label><input type="range" id="eco" min="0" max="2" step="0.05"></div>
+      </details>
+      <details><summary>Fundo e transparência</summary>
+      <div class="grp"><span class="lbl">Fundo</span><div class="seg" id="bg"><button type="button" data-v="black">Preto</button><button type="button" data-v="chroma">Verde</button><button type="button" data-v="checker">Transparente</button></div></div>
+      <div class="grp switch"><span class="lbl">Chave limpa no verde</span><button type="button" id="clean" aria-label="Chave limpa no verde"></button></div>
+      <p class="note">O Spout2 envia a letra com transparência. O fundo escolhido aparece na prévia.</p>
+      </details>
+    </div>
+
+  </aside>
+  <section class="col" id="slotStage" aria-label="Prévia">
+    <div class="stage" id="stage" data-bg="black" data-entry="fade" data-exit="fade" data-loop="none" data-edit="0">
+      <span class="tag" id="tag">Prévia</span>
+      <span class="hint">Arraste: ← → ondas, ↑ ↓ altura</span>
+      <div class="out" id="out"></div>
+    </div>
+    <div class="center-actions">
+      <span id="spoutStatus" class="pill" role="status" hidden>Spout desligado</span>
+      <button class="btn danger" id="clearEffects" type="button">Limpar efeito</button>
+      <button class="btn danger" id="clearLetter" type="button" aria-pressed="false">Limpar letra</button>
+    </div>
+<details class="card" id="bridgePanel" hidden>
   <summary>ProPresenter Bridge</summary>
   <form id="bridgeForm">
     <label for="bridgeAddress">Endereço HTTP do Mac</label>
@@ -297,26 +365,8 @@ html.saida #bridgePanel { display: none; }
   <p>Próximo slide</p>
   <pre id="bridgeNext">—</pre>
 </details>
-
-<main class="view" id="viewStage">
-  <aside class="col">
-    <section class="card fill">
-      <h2>Músicas</h2>
-      <div class="songs" id="songs"></div>
-      <div class="row"><button class="btn pri sm" id="newSong" type="button">Nova música</button></div>
-    </section>
-    <section class="card">
-      <h2>Para o Resolume e OBS</h2>
-      <p class="note">Abra a tela cheia em um monitor ou projetor e capture a janela. Use o fundo verde e aplique chroma key. Spout e NDI exigem a versão desktop.</p>
-    </section>
-  </aside>
-
-  <section class="col" id="slotStage">
-    <div class="stage" id="stage" data-bg="black" data-entry="fade" data-exit="fade" data-loop="none" data-edit="0">
-      <span class="tag" id="tag">Prévia</span>
-      <span class="hint">Arraste: ← → ondas, ↑ ↓ altura</span>
-      <div class="out" id="out"></div>
-    </div>
+    <details class="card manual-tools" id="manualTools">
+      <summary>Letras manuais</summary>
     <div class="transport">
       <button class="btn" id="prev" type="button">Anterior</button>
       <button class="btn pri" id="next" type="button">Próxima</button>
@@ -324,9 +374,12 @@ html.saida #bridgePanel { display: none; }
       <div class="info"><b id="pos">Linha 0 de 0</b><span id="secName">Nenhuma linha no ar</span></div>
     </div>
     <div class="keys"><span><kbd>→</kbd> <kbd>Espaço</kbd> próxima</span><span><kbd>←</kbd> anterior</span><span><kbd>B</kbd> preto</span><span><kbd>/</kbd> buscar</span><span><kbd>F</kbd> tela cheia</span></div>
-  </section>
-
-  <section class="card cuecard">
+    <section class="card fill">
+      <h2>Músicas</h2>
+      <div class="songs" id="songs"></div>
+      <div class="row"><button class="btn pri sm" id="newSong" type="button">Nova música</button></div>
+    </section>
+  <section class="cuecard">
     <div class="seg" role="tablist"><button type="button" id="tabCues" class="on">Linhas</button><button type="button" id="tabEdit">Editar letra</button></div>
     <div id="cuesPane">
       <input class="search" id="search" type="search" placeholder="Buscar verso ou seção ( / )" autocomplete="off">
@@ -338,25 +391,10 @@ html.saida #bridgePanel { display: none; }
       <p class="note" style="margin-top:8px">Use [Nome da seção] para nomear. Uma linha em branco separa as estrofes.</p>
     </div>
   </section>
-</main>
-
-<main class="view" id="viewFx" hidden>
-  <section class="col" id="slotFx">
-    <div class="transport">
-      <button class="btn" id="fxPrev" type="button">Anterior</button>
-      <button class="btn pri" id="fxNext" type="button">Próxima</button>
-      <button class="btn" id="fxReplay" type="button">Repetir animação</button>
-      <button class="btn" id="fxSurprise" type="button">Surpresa</button>
-    </div>
-    <div class="card">
-      <h2>Estilos prontos</h2>
-      <div class="chips" id="presets"></div>
-    </div>
+    </details>
   </section>
-
-  <aside class="card fxcard">
-    <div class="seg" id="fxTabs"><button type="button" data-t="anim" class="on">Animação</button><button type="button" data-t="text">Texto</button><button type="button" data-t="warp">Bandeira</button></div>
-
+  <aside class="card" aria-labelledby="animationHeading">
+    <h2 id="animationHeading">Animação</h2>
     <div class="pane" id="paneAnim">
       <div class="grp"><label for="entry">Entrada</label><select class="field" id="entry"></select></div>
       <div class="grp"><label for="loop">Loop</label><select class="field" id="loop"></select></div>
@@ -373,36 +411,17 @@ html.saida #bridgePanel { display: none; }
         <div class="grp switch" style="margin-top:12px"><span class="lbl">Alternar sentido das faixas</span><button type="button" id="gridAlternate" aria-label="Alternar sentido das faixas"></button></div>
         <p class="note" style="margin-top:10px">Repete uma palavra ou frase até cobrir toda a resolução. As faixas se movem continuamente, sem cortes.</p>
       </div>
+      <details><summary>Mais ajustes de animação</summary>
       <div class="grp"><span class="lbl">Animar por</span><div class="seg" id="split"><button type="button" data-v="char">Letra</button><button type="button" data-v="word">Palavra</button><button type="button" data-v="line">Linha</button></div></div>
       <div class="grp"><span class="lbl">Ordem</span><div class="seg" id="order"><button type="button" data-v="ltr">Esq → Dir</button><button type="button" data-v="rtl">Dir → Esq</button><button type="button" data-v="center">Centro</button><button type="button" data-v="rand">Aleatória</button></div></div>
       <div class="grp"><label for="dur">Duração <span id="durV"></span></label><input type="range" id="dur" min="0.2" max="1.6" step="0.05"></div>
       <div class="grp"><label for="bpm">Andamento <span id="bpmV"></span></label><input type="range" id="bpm" min="60" max="180" step="1"></div>
       <div class="grp switch"><span class="lbl">Desfoque de movimento</span><button type="button" id="mb" aria-label="Desfoque de movimento"></button></div>
       <div class="grp"><span class="lbl">Exibição</span><div class="seg" id="mode"><button type="button" data-v="line">Linha a linha</button><button type="button" data-v="stanza">Estrofe</button></div></div>
+      </details>
     </div>
 
-    <div class="pane" id="paneText" hidden>
-      <div class="grp"><label for="font">Fonte</label>
-        <select class="field" id="font">
-          <option value="sys">Sistema</option><option value="mont">Montserrat</option><option value="bebas">Bebas Neue</option><option value="anton">Anton</option><option value="play">Playfair Display</option>
-        </select></div>
-      <div class="grp"><label for="size">Tamanho <span id="sizeV"></span></label><input type="range" id="size" min="3" max="12" step="0.25"></div>
-      <div class="grp"><label for="track">Espaçamento <span id="trackV"></span></label><input type="range" id="track" min="-0.03" max="0.2" step="0.005"></div>
-      <div class="grp colors">
-        <label for="tc">Texto<input type="color" id="tc"></label>
-        <label for="gc">Destaque e brilho<input type="color" id="gc"></label>
-      </div>
-      <div class="grp switch"><span class="lbl">Caixa alta</span><button type="button" id="caps" aria-label="Caixa alta"></button></div>
-      <div class="grp"><label for="stroke">Contorno <span id="strokeV"></span></label><input type="range" id="stroke" min="0" max="0.08" step="0.002"></div>
-      <div class="grp"><label for="glow">Brilho <span id="glowV"></span></label><input type="range" id="glow" min="0" max="2" step="0.05"></div>
-      <div class="grp"><label for="shadow">Sombra <span id="shadowV"></span></label><input type="range" id="shadow" min="0" max="1" step="0.05"></div>
-      <div class="grp"><label for="eco">Eco <span id="ecoV"></span></label><input type="range" id="eco" min="0" max="2" step="0.05"></div>
-      <div class="grp"><span class="lbl">Fundo</span><div class="seg" id="bg"><button type="button" data-v="black">Preto</button><button type="button" data-v="chroma">Verde</button><button type="button" data-v="checker">Transparente</button></div></div>
-      <div class="grp switch"><span class="lbl">Chave limpa no verde</span><button type="button" id="clean" aria-label="Chave limpa no verde"></button></div>
-      <p class="note">O fundo Transparente só vira transparência real na Saída limpa aberta no OBS. Fora dele, use o fundo Verde com chroma key: a chave limpa tira sombra, brilho e eco, que deixam bordas sujas ao serem removidos.</p>
-    </div>
-
-    <div class="pane" id="paneWarp" hidden>
+    <details class="pane" id="paneWarp"><summary>Bandeira</summary>
       <div class="grp switch"><span class="lbl">Letra de bandeira</span><button type="button" id="wOn" aria-label="Ativar bandeira"></button></div>
       <div class="grp"><span class="lbl">Direção da onda</span><div class="seg" id="wDir"><button type="button" data-v="h">Horizontal</button><button type="button" data-v="v">Vertical</button></div></div>
       <div class="grp"><label for="wAmp">Altura da onda <span id="wAmpV"></span></label><input type="range" id="wAmp" min="0" max="0.6" step="0.01"></div>
@@ -412,7 +431,9 @@ html.saida #bridgePanel { display: none; }
       <div class="grp"><label for="wShade">Sombra das dobras <span id="wShadeV"></span></label><input type="range" id="wShade" min="0" max="1" step="0.05"></div>
       <div class="grp"><span class="lbl">Modelos</span><div class="chips" id="wPresets"></div></div>
       <p class="note">Com esta aba aberta, arraste a prévia: para os lados muda a quantidade de ondas, para cima e para baixo muda a altura.</p>
-    </div>
+    </details>
+    <details class="pane"><summary>Estilos prontos</summary><div class="chips" id="presets"></div></details>
+    <div class="row"><button class="btn sm" id="fxReplay" type="button">Repetir animação</button><button class="btn sm" id="fxSurprise" type="button">Surpresa</button></div>
   </aside>
 </main>
 
@@ -421,7 +442,7 @@ html.saida #bridgePanel { display: none; }
   var $=function(s){return document.querySelector(s)};
   var reduced=false;try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
   var FONTS={sys:{f:'-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue","Segoe UI",system-ui,sans-serif',w:700},mont:{f:'"Montserrat",sans-serif',w:800},bebas:{f:'"Bebas Neue",Impact,sans-serif',w:400},anton:{f:'"Anton",Impact,sans-serif',w:400},play:{f:'"Playfair Display",Georgia,serif',w:600}};
-  var ENTRIES=[['fade','Suave'],['up','Subir'],['down','Descer'],['left','Da esquerda'],['right','Da direita'],['zoom','Zoom'],['bounce','Zoom elástico'],['drop','Queda'],['flip','Giro 3D'],['blur','Desfocar'],['reveal','Revelar'],['scatter','Espalhar'],['type','Máquina de escrever'],['neon','Neon piscando'],['glitch','Glitch'],['karaoke','Karaokê']];
+  var ENTRIES=[['none','Nenhuma'],['fade','Suave'],['up','Subir'],['down','Descer'],['left','Da esquerda'],['right','Da direita'],['zoom','Zoom'],['bounce','Zoom elástico'],['drop','Queda'],['flip','Giro 3D'],['blur','Desfocar'],['reveal','Revelar'],['scatter','Espalhar'],['type','Máquina de escrever'],['neon','Neon piscando'],['glitch','Glitch'],['karaoke','Karaokê']];
   var LOOPS=[['none','Nenhum'],['breathe','Respirar'],['float','Flutuar'],['pulse','Pulso no andamento'],['flash','Flash no andamento'],['shake','Tremer'],['sway','Balançar'],['glow','Brilho pulsante'],['rainbow','Arco-íris'],['gridscroll','Grid Scroll · Repetição infinita']];
   var EXITS=[['none','Nenhuma'],['fade','Suave'],['up','Subir'],['down','Descer'],['left','Para a esquerda'],['right','Para a direita'],['zoom','Zoom'],['blur','Desfocar'],['scatter','Espalhar'],['flip','Giro 3D']];
   var DEF={bridgeExit:false,preset:'culto',entry:'fade',loop:'none',exit:'fade',split:'word',order:'ltr',dur:0.6,bpm:120,mb:false,mode:'line',
@@ -467,7 +488,7 @@ html.saida #bridgePanel { display: none; }
     {id:'s1',title:'Luz da Manhã',text:'[Verso 1]\nQuando a noite chega ao fim\nUma luz começa a nascer\nCada passo que eu dou\nMe ensina a recomeçar\n\n[Refrão]\nLevanta, levanta\nA luz da manhã chegou\nCanta, canta\nQue a esperança nos achou\n\n[Verso 2]\nNo silêncio da estrada\nEu escuto uma voz\nDiz que o dia é novo\nE que nunca estou só\n\n[Ponte]\nAbre as mãos, abre o céu\nTudo o que passou ficou para trás'},
     {id:'s2',title:'Noite Neon',text:'[Verso]\nA cidade acende devagar\nCada rua vira pista\nO coração pega o ritmo\nE ninguém quer ir embora\n\n[Drop]\nSobe, sobe, sobe\nA batida é o nosso lugar\nGrita, grita, grita\nA noite vai começar'}
   ];
-  var S,songs,cur,idx=-1,blankOn=false,q='',cues=[],P,tx=0,raf=0,WP=[],WB={minX:0,maxX:1,minY:0,maxY:1,fs:16},view='stage',fxTab='anim',gridTracks=[],gridFrame=0,gridStart=0,gridLast=0;
+  var S,songs,cur,idx=-1,blankOn=false,q='',cues=[],P,tx=0,raf=0,WP=[],WB={minX:0,maxX:1,minY:0,maxY:1,fs:16},gridTracks=[],gridFrame=0,gridStart=0,gridLast=0;
 
   function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
   function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -511,6 +532,7 @@ html.saida #bridgePanel { display: none; }
     return '<div class="ln'+(anim?' live':'')+(sp==='line'?' u':'')+'"'+(sp==='line'?' data-text="'+esc(t)+'"':'')+'><div class="lp">'+words+'</div></div>';
   }
   var bridgeSlide = null;
+  var letterCleared = false;
   var bridgeStage = createProPresenterStage(function(text) {
     var template = document.createElement('template');
     template.innerHTML = text.split('\n').map(function(line) {
@@ -521,7 +543,7 @@ html.saida #bridgePanel { display: none; }
 
   function bridgeStyle(){return S.split + ':' + S.caps}
   function prepareBridge(){bridgeStage.prepare(bridgeSlide?.next || '',bridgeStyle())}
-  function stageText(){return bridgeSlide ? bridgeSlide.current : (idx>=0&&!blankOn ? cues[idx]?.text : '')}
+  function stageText(){if(letterCleared)return '';return bridgeSlide ? bridgeSlide.current : (idx>=0&&!blankOn ? cues[idx]?.text : '')}
 
   function orderUnits(root){
     root.querySelectorAll('.ln.live').forEach(function(ln){
@@ -613,7 +635,7 @@ html.saida #bridgePanel { display: none; }
       window.souzDesktop.publish({
         settings:JSON.parse(JSON.stringify(S)),
         song:{id:cur,title:song().title,text:song().text},
-        idx:idx,blank:blankOn,
+        idx:idx,blank:blankOn,letterCleared:letterCleared,
         transition:{leave:!!(transition&&transition.leave)}
       });
     }
@@ -751,31 +773,24 @@ html.saida #bridgePanel { display: none; }
   function surprise(){
     change({entry:pickOf(ENTRIES.filter(function(e){return e[0]!=='type'}))[0],loop:pickOf(LOOPS)[0],exit:pickOf(EXITS)[0],split:pickOf(['char','word','word','line']),order:pickOf(['ltr','rtl','center','rand']),dur:+rnd(0.4,1).toFixed(2)});
   }
-  function updateEdit(){$('#stage').dataset.edit=(view==='fx'&&fxTab==='warp')?'1':'0'}
-  function setView(v){
-    view=v;var fx=v==='fx';
-    $('#viewStage').hidden=fx;$('#viewFx').hidden=!fx;
-    var st=$('#stage'),slot=$(fx?'#slotFx':'#slotStage');slot.insertBefore(st,slot.firstChild);
-    document.querySelectorAll('#views button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
-    if(fx&&idx<0&&cues.length)go(0);else setTimeout(function(){measure();syncGrid()},0);
-    updateEdit();
-  }
-  function setFxTab(t){
-    fxTab=t;
-    document.querySelectorAll('#fxTabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});
-    $('#paneAnim').hidden=t!=='anim';$('#paneText').hidden=t!=='text';$('#paneWarp').hidden=t!=='warp';
-    updateEdit();
-  }
+  $('#paneWarp').ontoggle=function(){$('#stage').dataset.edit=this.open?'1':'0'};
 
   /* ===== eventos ===== */
   $('#songs').addEventListener('click',function(e){var b=e.target.closest('.song');if(b)pick(b.dataset.id)});
   $('#cues').addEventListener('click',function(e){var b=e.target.closest('.cue');if(b)go(+b.dataset.i)});
   $('#next').onclick=next;$('#prev').onclick=prev;$('#blank').onclick=toggleBlank;
-  $('#fxPrev').onclick=prev;$('#fxNext').onclick=next;
-  $('#fxReplay').onclick=function(){if(idx<0)go(0);else{blankOn=false;renderStage()}};
+  $('#clearEffects').onclick=function(){
+    change({entry:'none',loop:'none',exit:'none',mb:false,glow:0,eco:0,shadow:0,stroke:0,
+      warp:Object.assign({},S.warp,{on:false})});
+  };
+  $('#clearLetter').onclick=function(){
+    letterCleared=!letterCleared;
+    this.setAttribute('aria-pressed',String(letterCleared));
+    this.textContent=letterCleared?'Restaurar letra':'Limpar letra';
+    renderStage();
+  };
+  $('#fxReplay').onclick=function(){if(!bridgeSlide&&idx<0)go(0);else{blankOn=false;renderStage()}};
   $('#fxSurprise').onclick=surprise;
-  $('#views').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setView(b.dataset.v)});
-  $('#fxTabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setFxTab(b.dataset.t)});
   $('#presets').addEventListener('click',function(e){var b=e.target.closest('.chip');if(b)applyPreset(b.dataset.k)});
   $('#wPresets').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;var p=Object.assign({},WPRESETS[b.dataset.k]);delete p.n;p.on=true;changeWarp(p)});
   [['#split','split'],['#order','order'],['#mode','mode'],['#bg','bg']].forEach(function(p){
@@ -841,7 +856,6 @@ html.saida #bridgePanel { display: none; }
 
   function setSaida(on){
     document.documentElement.classList.toggle('saida',on);
-    if(on&&view==='fx')setView('stage');
     setTimeout(function(){measure();syncGrid()},80);
   }
   function inSaida(){return document.documentElement.classList.contains('saida')}
@@ -856,7 +870,7 @@ html.saida #bridgePanel { display: none; }
 
   document.addEventListener('keydown',function(e){
     var t=e.target,typing=t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT');
-    if(typing||t?.closest?.('#bridgePanel')||e.metaKey||e.ctrlKey||e.altKey)return;
+    if(typing||t?.closest?.('button,summary,a,#bridgePanel')||e.metaKey||e.ctrlKey||e.altKey)return;
     var k=e.key;
     if(k==='ArrowRight'||k==='ArrowDown'||k===' '||k==='PageDown'){e.preventDefault();next()}
     else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'){e.preventDefault();prev()}
@@ -864,7 +878,7 @@ html.saida #bridgePanel { display: none; }
     else if(k==='f'||k==='F'){fs()}
     else if(k==='o'||k==='O'){setSaida(!inSaida())}
     else if(k==='Escape'&&inSaida()){setSaida(false)}
-    else if(k==='/'){e.preventDefault();setView('stage');setTab(false);$('#search').focus()}
+    else if(k==='/'){e.preventDefault();$('#manualTools').open=true;setTab(false);$('#search').focus()}
   });
 
   var root=document.documentElement;
@@ -933,10 +947,12 @@ html.saida #bridgePanel { display: none; }
         S.grid=Object.assign({},DEF.grid,v.settings.grid||{});
         S.bg='checker';
         songs=[v.song];cur=v.song.id;idx=v.idx;blankOn=!!v.blank;
+        var muteChanged=letterCleared!==Boolean(v.letterCleared);
+        letterCleared=Boolean(v.letterCleared);
         reparse();
         if(bridgeSlide){
           var changes=Object.keys(S).filter(function(key){return JSON.stringify(S[key])!==JSON.stringify(oldSettings[key])});
-          if(changes.some(function(key){return REBUILD[key]||key==='loop'}))renderStage();
+          if(muteChanged||changes.some(function(key){return REBUILD[key]||key==='loop'}))renderStage();
           else if(changes.length){renderVars();syncWarp();if(S.loop==='gridscroll')syncGrid()}
           return;
         }
@@ -960,7 +976,7 @@ html.saida #bridgePanel { display: none; }
         var line=document.createElement('div');line.id='souzTelemetry';
         line.setAttribute('aria-label','Monitor da saída Spout2');
         line.innerHTML='<span id="souzFps">Captura: —</span><span id="souzPipe">Pipe: —</span><span id="souzNative">Spout: —</span><span id="souzFrames">Descartes: —</span><span id="souzLink">Saída: aguardando</span>';
-        var parent=spoutStatus.parentNode;parent.insertBefore(line,spoutStatus.nextSibling);
+        $('#slotStage').insertBefore(line,$('#bridgePanel'));
         if(window.souzDesktop.onMetrics)window.souzDesktop.onMetrics(function(m){
           var fps=document.getElementById('souzFps'),pipe=document.getElementById('souzPipe'),nat=document.getElementById('souzNative'),drop=document.getElementById('souzFrames'),link=document.getElementById('souzLink');
           if(!fps||!pipe||!nat||!drop||!link)return;

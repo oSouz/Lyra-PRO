@@ -62,8 +62,11 @@ antes de iniciar o aplicativo.
 
 ## Efeitos nas letras do ProPresenter
 
-Na aba **Efeitos**, escolha um preset ou ajuste entrada, loop, Warp, fonte
-e cor enquanto o Bridge está conectado. A prévia e a saída Spout2 usam
+Com o Bridge conectado, ajuste fonte, tamanho e cor no painel **Texto** e
+escolha entrada, loop, saída, Bandeira ou um preset no painel **Animação**.
+**Limpar efeito** mantém a letra e desativa as animações e o acabamento.
+**Limpar letra** oculta a saída enquanto o ProPresenter continua avançando.
+Clique em **Restaurar letra** para voltar ao slide atual. A prévia e a saída Spout2 usam
 as mesmas configurações. Cada slide do ProPresenter é tratado como um
 bloco de texto, com suas quebras de linha.
 

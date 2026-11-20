@@ -1,5 +1,5 @@
 'use strict';
-const {app, BrowserWindow, ipcMain} = require('electron');
+const {app, BrowserWindow, ipcMain, shell} = require('electron');
 const {spawn} = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -131,6 +131,12 @@ function createControl() {
   control.webContents.on('did-finish-load', () => {
     control.webContents.send('souz:status',{active:!!sender,message:lastStatus||'Spout desligado'});
     control.webContents.send('souz:bridge-state', bridgeState);
+  });
+  control.webContents.setWindowOpenHandler(({url}) => {
+    if (url === 'https://github.com/oSouz/Lyra-PRO/tree/feature/propresenter-bridge') {
+      shell.openExternal(url).catch(error => console.error('[LYRA]', error.message));
+    }
+    return {action:'deny'};
   });
   control.loadFile(asset);
   control.on('closed', () => {

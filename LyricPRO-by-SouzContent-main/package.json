@@ -1,13 +1,13 @@
 {
   "name": "souz-pro-lyric-desktop",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "private": true,
-  "description": "Lyra Desktop — v0.6.4 com monitoramento Spout2 e animações",
+  "description": "Lyra Desktop — v0.6.5 com monitoramento Spout2 e animações",
   "main": "main.cjs",
   "scripts": {
-    "test": "node --test test/propresenter-bridge.test.cjs",
+    "test": "node --test test/propresenter-bridge.test.cjs test/updates.test.cjs",
     "start": "electron .",
-    "check": "node --check main.cjs && node --check preload.cjs && node --check propresenter-bridge.cjs && node --check app/propresenter-stage.js && node scripts/check-project.cjs",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check propresenter-bridge.cjs && node --check app/propresenter-stage.js && node --check updates.cjs && node --check app/updates-ui.js && node scripts/check-project.cjs",
     "dist:win": "electron-builder --win nsis --x64 --publish never"
   },
   "devDependencies": {
@@ -24,6 +24,7 @@
     "files": [
       "main.cjs",
       "propresenter-bridge.cjs",
+      "updates.cjs",
       "preload.cjs",
       "app/**/*",
       "package.json"

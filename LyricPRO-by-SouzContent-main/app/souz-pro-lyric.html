@@ -842,7 +842,7 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
       window.souzDesktop.publish({
         settings:JSON.parse(JSON.stringify(S)),
         song:{id:cur,title:song().title,text:song().text},
-        idx:idx,blank:blankOn,letterCleared:letterCleared,
+        idx:idx,blank:blankOn,letterCleared:letterCleared,cleanOutput:inSaida(),
         transition:{leave:!!(transition&&transition.leave)}
       });
     }
@@ -1093,6 +1093,7 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
 
   function setSaida(on){
     document.documentElement.classList.toggle('saida',on);
+    publishDesktop();
     setTimeout(function(){measure();syncGrid()},80);
   }
   function inSaida(){return document.documentElement.classList.contains('saida')}
@@ -1282,5 +1283,6 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
 })();
 </script>
 
+<script src="updates-ui.js"></script>
 </body>
 </html>

@@ -1,6 +1,8 @@
 'use strict';
-const {app, BrowserWindow, ipcMain, shell} = require('electron');
+const {app, BrowserWindow, ipcMain, shell, dialog} = require('electron');
 const {spawn} = require('node:child_process');
+const {once} = require('node:events');
+const {findRelease, downloadInstaller, verifyInstaller} = require('./updates.cjs');
 const path = require('node:path');
 const fs = require('node:fs');
 const {performance} = require('node:perf_hooks');
@@ -105,6 +107,7 @@ function scheduleRestart(){
 
 function report(message, active = !!sender) {
   lastStatus = message;
+  publishUpdateState();
   console.log('[SOUZ]', message);
   if (control && !control.isDestroyed()) {
     control.webContents.send('souz:status', {active, ready:active&&nativeReady, requested:desiredSpout, message});
@@ -115,6 +118,7 @@ let bridgeState = null;
 
 function publishBridge(state) {
   bridgeState = state;
+  publishUpdateState();
   if (control && !control.isDestroyed()) control.webContents.send('souz:bridge-state', state);
   if (outReady && output && !output.isDestroyed()) {
     output.webContents.send('souz:bridge-state', state);
@@ -305,11 +309,108 @@ function startSender() {
   createOutput();
   return {active:true,message:lastStatus};
 }
+let updatePhase = 'idle', updateMessage = 'Consulte o canal de atualizações.';
+let release, installer, updateProgress, lastUpdateState;
+let installing = false;
+
+function updateBlock() {
+  if (!app.isPackaged) return 'A instalação de atualizações está disponível no Lyra instalado.';
+  if (desiredSpout || sender) return 'Pare o Spout2 para instalar a atualização.';
+  if (lastState?.cleanOutput || (!lastState?.letterCleared &&
+      (bridgeState ? bridgeState.current.trim() : lastState?.idx >= 0 && !lastState.blank))) {
+    return 'Limpe a apresentação e saia da Saída limpa antes de instalar.';
+  }
+  return '';
+}
+
+function updateState() {
+  return {installed:app.getVersion(), available:release?.version ?? null, phase:updatePhase,
+    message:updateMessage, progress:updateProgress ?? null, block:updateBlock()};
+}
+
+function publishUpdateState() {
+  if (!control || control.isDestroyed()) return;
+  const state = updateState();
+  const serialized = JSON.stringify(state);
+  if (serialized === lastUpdateState) return;
+  lastUpdateState = serialized;
+  control.webContents.send('souz:update-state', state);
+}
+
+function setUpdatePhase(phase, message) {
+  updatePhase = phase;
+  updateMessage = message;
+  publishUpdateState();
+}
+
+async function runUpdate(action) {
+  if (['checking','downloading','installing'].includes(updatePhase)) return updateState();
+  if (action === 'check' && !installer) {
+    release = undefined;
+    setUpdatePhase('checking','Verificando atualizações…');
+    try {
+      release = await findRelease(app.getVersion());
+      setUpdatePhase(release?'available':'current',release?'Atualização disponível.':'Nenhuma atualização disponível.');
+    } catch (error) {
+      setUpdatePhase('error',error.message);
+    }
+  } else if (action === 'download' && release && !installer) {
+    updateProgress = 0;
+    setUpdatePhase('downloading','Baixando o instalador…');
+    try {
+      installer = await downloadInstaller(release,app.getPath('temp'), percent => {
+        updateProgress = percent;
+        publishUpdateState();
+      });
+      setUpdatePhase('downloaded','Instalador pronto.');
+    } catch (error) {
+      updateProgress = undefined;
+      setUpdatePhase('available',error.message);
+    }
+  } else if (action === 'install' && installer && !updateBlock()) {
+    setUpdatePhase('installing','Confirmando instalação…');
+    try {
+      await verifyInstaller(installer,release.digest);
+    } catch (error) {
+      installer = undefined;
+      updateProgress = undefined;
+      setUpdatePhase('available',error.message);
+      return updateState();
+    }
+    try {
+      const answer = await dialog.showMessageBox(control,{
+        type:'question',buttons:['Depois','Instalar e reiniciar'],defaultId:0,cancelId:0,
+        title:'Atualizar o Lyra',message:'Instalar o Lyra '+release.version+'?',
+        detail:'O Lyra será fechado, atualizado e reaberto. Suas músicas e configurações serão mantidas.'
+      });
+      const blocked = updateBlock();
+      if (answer.response !== 1 || blocked) {
+        setUpdatePhase('downloaded',blocked || 'Instalador pronto.');
+        return updateState();
+      }
+      installing = true;
+      const child = spawn(installer,['/S','--updated','--force-run'],{detached:true,stdio:'ignore',windowsHide:true});
+      await once(child,'spawn');
+      child.unref();
+      app.quit();
+    } catch (error) {
+      installing = false;
+      setUpdatePhase('downloaded','Falha ao abrir o instalador: '+error.message);
+    }
+  }
+  return updateState();
+}
+
 app.whenReady().then(()=>{
+  ipcMain.handle('souz:updates', (event, action) => {
+    if (!control || event.sender !== control.webContents || event.senderFrame !== control.webContents.mainFrame) return;
+    return runUpdate(action);
+  });
   ipcMain.handle('souz:bridge', (event, address) => {
     if (!control || event.sender !== control.webContents || event.senderFrame !== control.webContents.mainFrame) {
       return {error: 'Acesso negado'};
     }
+    if (installing) return {error:'O Lyra está sendo atualizado.'};
     let endpoint;
     if (address !== null) {
       try {
@@ -337,6 +438,7 @@ app.whenReady().then(()=>{
     if (!control || event.sender!==control.webContents) return;
     if (!state || typeof state!=='object' || !state.song || !state.settings) return;
     lastState=state;
+    publishUpdateState();
     if(output && !output.isDestroyed() && outReady)output.webContents.send('souz:state',state);
   });
   ipcMain.on('souz:output-ready',event=>{
@@ -351,9 +453,11 @@ app.whenReady().then(()=>{
   ipcMain.handle('souz:spout',(event,enable)=>{
     if(!control || event.sender!==control.webContents) return {active:false,message:'Acesso negado'};
     if(!enable){stopSender();return {active:false,message:'Spout desligado'};}
+    if (installing) return {active:false,message:'O Lyra está sendo atualizado.'};
     return startSender();
   });
   createControl();
+  if (app.isPackaged) setTimeout(()=>{if(updatePhase==='idle')runUpdate('check')},3000).unref();
   // Telemetria objetiva: distingue falta de paint, falha do pipe e falha de SendImage.
   setInterval(emitMetrics,1000).unref();
   setInterval(()=>{

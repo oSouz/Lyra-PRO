@@ -91,3 +91,17 @@ saída do Arena no mesmo enquadramento, conte os quadros entre os eventos e
 repita com avanços e saltos para obter as latências típica e de pior caso
 observado. O teste automatizado usa um servidor HTTP simulado na máquina
 local.
+
+## Atualizações do Lyra para Windows
+
+A partir da versão 0.6.5, instale o Lyra uma vez pelo instalador Windows e
+abra **Atualizações** na barra superior. O Lyra consulta o canal estável do
+GitHub no início e ao clicar em **Verificar**. **Baixar** prepara o instalador
+e **Instalar e reiniciar** pede confirmação. Antes de instalar, pare o Spout2,
+limpe a apresentação e feche a Saída limpa.
+
+Para disponibilizar uma atualização, publique uma release estável em
+[Releases do Lyra](https://github.com/oSouz/Lyra-PRO/releases) com uma tag
+como `v0.6.6` e anexe o instalador gerado com o mesmo número, como
+`Lyra-Setup-0.6.6-x64.exe`. O aplicativo verifica o tamanho e o SHA-256
+informados pelo GitHub. Tags sem release e pré-releases ficam fora desse canal.

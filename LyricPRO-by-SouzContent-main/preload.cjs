@@ -4,6 +4,8 @@ const role = process.argv.includes('--souz-output') ? 'output' : 'control';
 contextBridge.exposeInMainWorld('souzDesktop', {
   role,
   version: require('./package.json').version,
+  updates: action => role === 'control' && ipcRenderer.invoke('souz:updates', action),
+  onUpdate: fn => { if(role==='control') ipcRenderer.on('souz:update-state', (_event, value) => fn(value)); },
   setBridge: address => role === 'control' && ipcRenderer.invoke('souz:bridge', address),
   onBridge: fn => ipcRenderer.on('souz:bridge-state', (_event, value) => fn(value)),
   publish: state => { if(role==='control') ipcRenderer.send('souz:publish', state); },

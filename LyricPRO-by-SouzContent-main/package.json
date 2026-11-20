@@ -1,8 +1,8 @@
 {
   "name": "souz-pro-lyric-desktop",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "private": true,
-  "description": "Lyra Desktop — v0.6.5 com monitoramento Spout2 e animações",
+  "description": "Lyra Desktop — v0.6.6 com monitoramento Spout2 e animações",
   "main": "main.cjs",
   "scripts": {
     "test": "node --test test/propresenter-bridge.test.cjs test/updates.test.cjs",
@@ -40,6 +40,7 @@
       }
     ],
     "win": {
+      "icon": "app/lyra.ico",
       "target": [
         {
           "target": "nsis",
@@ -51,6 +52,8 @@
       "artifactName": "Lyra-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
+      "installerIcon": "app/lyra.ico",
+      "uninstallerIcon": "app/lyra.ico",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,

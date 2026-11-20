@@ -450,11 +450,24 @@ html.saida .workspace #stage, .workspace #stage:fullscreen { outline: none; }
 .bridge-dialog footer { display: flex; justify-content: flex-end; }
 @media (prefers-reduced-motion: reduce) { .output-toggle { transition: none; } #bridgeBtn[data-state="on"] strong { animation: none; } }
 </style>
+<style>
+.brand {
+  position: relative; display: grid; gap: 3px;
+  padding: 4px 6px 4px 41px;
+}
+.brand-icon { position: absolute; inset: 50% auto auto 5px; transform: translateY(-50%); width: 29px; height: 29px; }
+.brand-wordmark { display: block; width: 59px; height: auto; }
+.brand span { text-transform: uppercase; font-size: 8px; }
+</style>
 </head>
 <body>
 
 <header class="bar">
-  <button class="brand" id="aboutBtn" type="button" aria-label="Sobre o Lyra" aria-haspopup="dialog"><b>LYRA</b><span>A Souz Content Product</span></button>
+  <button class="brand" id="aboutBtn" type="button" aria-label="Sobre o Lyra" aria-haspopup="dialog">
+    <img class="brand-icon" src="lyra-icon.png" alt="">
+    <img class="brand-wordmark" src="lyra-wordmark.png" alt="LYRA">
+    <span>A Souz Content Product</span>
+  </button>
   <button type="button" class="theme" id="theme" role="switch" aria-checked="false" aria-label="Modo escuro"><span class="knob"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg></span></button>
   <span class="pill" id="live"><i></i><em id="liveTxt" style="font-style:normal">Tela vazia</em></span>
   <div class="output-controls" aria-label="Controles de saída">

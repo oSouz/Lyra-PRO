@@ -12,6 +12,7 @@ const {slideEndpoint, followSlides} = require('./propresenter-bridge.cjs');
 const SIZE = {width:1920,height:1080};
 const FPS = 60;
 const SPOUT_NAME = 'Lyra';
+if(process.platform==='win32')app.setAppUserModelId('br.com.souz.prolyric');
 
 // Existing installations can keep using the library in their original data folder.
 const legacyUserData = path.join(app.getPath('appData'), 'Souz Pro Lyric');
@@ -133,6 +134,7 @@ function stopBridge() {
 function createControl() {
   control = new BrowserWindow({
     width:1440,height:900,minWidth:1000,minHeight:650,backgroundColor:'#111111',
+    icon:path.join(__dirname,'app','lyra-icon.png'),
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:false}
   });
   control.webContents.on('did-finish-load', () => {

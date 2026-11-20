@@ -60,15 +60,26 @@ antes de iniciar o aplicativo.
 
 [Fontes no Resolume](https://resolume.com/support/sources) · [Spout2 SDK](https://github.com/leadedge/Spout2)
 
+## Efeitos nas letras do ProPresenter
+
+Na aba **Efeitos**, escolha um preset ou ajuste entrada, loop, Warp, fonte
+e cor enquanto o Bridge está conectado. A prévia e a saída Spout2 usam
+as mesmas configurações. Cada slide do ProPresenter é tratado como um
+bloco de texto, com suas quebras de linha.
+
+Por padrão, a próxima letra entra assim que a API confirma a troca. Para
+rodar a animação de saída antes da troca, selecione o efeito de saída e
+marque **Aguardar efeito de saída antes de trocar** no Bridge. Essa opção
+adiciona tempo à troca. Slides sem letra e perda de conexão limpam a saída
+assim que detectados, inclusive com a opção ligada.
+
 ## Latência e escopo
 
 A leitura é feita exclusivamente com `GET /v1/status/slide`. Há uma consulta
 por vez, com intervalo nominal de 50 ms entre inícios quando o servidor
 responde em menos de 50 ms. O Bridge só publica alterações. Ele prepara o
-texto do próximo slide em uma camada oculta e a torna visível quando a API
-confirma a troca. Em um salto, atualiza o texto direto. O MVP usa texto
-branco estático com quebras de linha. Efeitos e configurações de aparência
-para a fonte de rede ficam para outra etapa.
+estrutura de efeitos do próximo slide antes de receber a confirmação da
+troca. Em um salto, gera a estrutura para o novo texto na hora.
 
 Os 50 ms são a cadência de consulta, não o atraso total. A medição em
 produção deve incluir a rede, o tempo de resposta da API, a renderização, o

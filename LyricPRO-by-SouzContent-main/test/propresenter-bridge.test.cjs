@@ -79,28 +79,22 @@ test('accepts an empty response and rejects redirects and invalid text', async t
   await assert.rejects(readSlides(url), /Formato de slide/);
 });
 
-test('promotes the prepared layer only when confirmed live, including jumps and clear', () => {
-  function layer() {
-    const classes = new Set();
-    return {textContent: '', classes, classList: {
-      remove: name => classes.delete(name),
-      toggle: (name, on) => on ? classes.add(name) : classes.delete(name)
-    }};
-  }
-  const layers = [layer(), layer()];
-  const render = globalThis.createProPresenterStage(layers);
-  const state = () => layers.map(item => [item.textContent, item.classes.has('bridge-live')]);
+test('reuses the prepared slide only when text and effect structure match', () => {
+  const built = [];
+  const stage = globalThis.createProPresenterStage(text => {
+    const content = {text};
+    built.push(content);
+    return content;
+  });
 
-  render({current: 'A', next: 'B'});
-  assert.deepEqual(state(), [['A', true], ['B', false]]);
-  render({current: 'A', next: 'C'});
-  assert.deepEqual(state(), [['A', true], ['C', false]]);
-  render({current: 'C', next: 'D'});
-  assert.deepEqual(state(), [['D', false], ['C', true]]);
-  render({current: '<b>Pulo</b>', next: 'E'});
-  assert.deepEqual(state(), [['E', false], ['<b>Pulo</b>', true]]);
-  render({current: '', next: ''});
-  assert.deepEqual(state(), [['', false], ['', false]]);
-  render(null);
-  assert.deepEqual(state(), [['', false], ['', false]]);
+  stage.prepare('Refrão\nSegunda linha', 'word:false');
+  stage.prepare('Refrão\nSegunda linha', 'word:false');
+  assert.equal(built.length, 1);
+  assert.equal(stage.take('Pulo', 'word:false').text, 'Pulo');
+  assert.equal(stage.take('Refrão\nSegunda linha', 'word:false'), built[0]);
+
+  stage.prepare('Final', 'word:false');
+  assert.notEqual(stage.take('Final', 'char:true'), built[2]);
+  stage.prepare('', 'word:false');
+  assert.notEqual(stage.take('Final', 'word:false'), built[2]);
 });

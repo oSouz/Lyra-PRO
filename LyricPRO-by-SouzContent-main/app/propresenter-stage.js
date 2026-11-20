@@ -1,22 +1,21 @@
 'use strict';
 
-// Keep the next slide laid out in the same viewport as the live slide.
-// Visibility preserves layout while keeping those pixels out of the output.
-globalThis.createProPresenterStage = function (layers) {
-  let live = layers[0];
-  let prepared = layers[1];
-
-  function write(layer, text) {
-    if (layer.textContent !== text) layer.textContent = text;
-  }
-
-  return function (slide) {
-    if (slide && live.textContent !== slide.current && prepared.textContent === slide.current) {
-      live.classList.remove('bridge-live');
-      [live, prepared] = [prepared, live];
+// Prepare the next slide's effect markup without starting its animations.
+globalThis.createProPresenterStage = function (build) {
+  let prepared;
+  return {
+    prepare(text, style) {
+      if (!text.trim()) {
+        prepared = undefined;
+      } else if (prepared?.text !== text || prepared.style !== style) {
+        prepared = {text, style, content: build(text)};
+      }
+    },
+    take(text, style) {
+      if (prepared?.text !== text || prepared.style !== style) return build(text);
+      const {content} = prepared;
+      prepared = undefined;
+      return content;
     }
-    write(live, slide?.current ?? '');
-    write(prepared, slide?.next ?? '');
-    live.classList.toggle('bridge-live', Boolean(slide?.current.trim()));
   };
 };

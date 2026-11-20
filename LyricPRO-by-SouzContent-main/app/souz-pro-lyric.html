@@ -267,15 +267,7 @@ html.saida .tag,html.saida .hint{display:none!important}
 #bridgePanel { max-width: 1440px; margin: 12px auto; padding: 0 16px; }
 #bridgePanel form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 #bridgePanel pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
-html.saida #bridgePanel, .bridge-mode #out { display: none; }
-.bridge-layer {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  padding: 5cqw 6cqw; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere;
-  pointer-events: none; visibility: hidden; color: white;
-  font: 700 5cqw/1.15 system-ui, sans-serif;
-}
-.bridge-layer.bridge-live { visibility: visible; }
-html.saida .stage.bridge-mode { background: transparent !important; }
+html.saida #bridgePanel { display: none; }
 </style>
 <script src="propresenter-stage.js"></script>
 </head>
@@ -301,6 +293,7 @@ html.saida .stage.bridge-mode { background: transparent !important; }
     <button class="btn" type="button" id="bridgeStop" disabled>Desconectar</button>
     <span id="bridgeStatus" role="status">Modo manual</span>
   </form>
+  <label><input type="checkbox" id="bridgeExit"> Aguardar efeito de saída antes de trocar</label>
   <p>Próximo slide</p>
   <pre id="bridgeNext">—</pre>
 </details>
@@ -323,8 +316,6 @@ html.saida .stage.bridge-mode { background: transparent !important; }
       <span class="tag" id="tag">Prévia</span>
       <span class="hint">Arraste: ← → ondas, ↑ ↓ altura</span>
       <div class="out" id="out"></div>
-      <div class="bridge-layer" aria-hidden="true"></div>
-      <div class="bridge-layer" aria-hidden="true"></div>
     </div>
     <div class="transport">
       <button class="btn" id="prev" type="button">Anterior</button>
@@ -433,7 +424,7 @@ html.saida .stage.bridge-mode { background: transparent !important; }
   var ENTRIES=[['fade','Suave'],['up','Subir'],['down','Descer'],['left','Da esquerda'],['right','Da direita'],['zoom','Zoom'],['bounce','Zoom elástico'],['drop','Queda'],['flip','Giro 3D'],['blur','Desfocar'],['reveal','Revelar'],['scatter','Espalhar'],['type','Máquina de escrever'],['neon','Neon piscando'],['glitch','Glitch'],['karaoke','Karaokê']];
   var LOOPS=[['none','Nenhum'],['breathe','Respirar'],['float','Flutuar'],['pulse','Pulso no andamento'],['flash','Flash no andamento'],['shake','Tremer'],['sway','Balançar'],['glow','Brilho pulsante'],['rainbow','Arco-íris'],['gridscroll','Grid Scroll · Repetição infinita']];
   var EXITS=[['none','Nenhuma'],['fade','Suave'],['up','Subir'],['down','Descer'],['left','Para a esquerda'],['right','Para a direita'],['zoom','Zoom'],['blur','Desfocar'],['scatter','Espalhar'],['flip','Giro 3D']];
-  var DEF={preset:'culto',entry:'fade',loop:'none',exit:'fade',split:'word',order:'ltr',dur:0.6,bpm:120,mb:false,mode:'line',
+  var DEF={bridgeExit:false,preset:'culto',entry:'fade',loop:'none',exit:'fade',split:'word',order:'ltr',dur:0.6,bpm:120,mb:false,mode:'line',
     font:'play',size:6.5,track:0.01,tc:'#ffffff',gc:'#7aa7ff',caps:false,stroke:0,glow:0,shadow:0.4,eco:0,bg:'black',clean:true,
     warp:{on:false,dir:'h',amp:0.12,len:2.2,speed:1.2,pin:0.6,shade:0.35},grid:{fontSize:72,text:'',dir:'left',speed:110,lanes:3,gap:35,wordGap:20,alternate:false}};
   var PRESETS={
@@ -519,6 +510,19 @@ html.saida .stage.bridge-mode { background: transparent !important; }
     }).join(' ');
     return '<div class="ln'+(anim?' live':'')+(sp==='line'?' u':'')+'"'+(sp==='line'?' data-text="'+esc(t)+'"':'')+'><div class="lp">'+words+'</div></div>';
   }
+  var bridgeSlide = null;
+  var bridgeStage = createProPresenterStage(function(text) {
+    var template = document.createElement('template');
+    template.innerHTML = text.split('\n').map(function(line) {
+      return line.trim() ? lineHTML(line.trim(), true) : '<div class="ln">&nbsp;</div>';
+    }).join('');
+    return template.content;
+  });
+
+  function bridgeStyle(){return S.split + ':' + S.caps}
+  function prepareBridge(){bridgeStage.prepare(bridgeSlide?.next || '',bridgeStyle())}
+  function stageText(){return bridgeSlide ? bridgeSlide.current : (idx>=0&&!blankOn ? cues[idx]?.text : '')}
+
   function orderUnits(root){
     root.querySelectorAll('.ln.live').forEach(function(ln){
       var us=ln.classList.contains('u')?[ln]:Array.prototype.slice.call(ln.querySelectorAll('.u'));
@@ -558,12 +562,13 @@ html.saida .stage.bridge-mode { background: transparent !important; }
   function stopGrid(){if(gridFrame){cancelAnimationFrame(gridFrame);gridFrame=0}gridTracks=[];gridLast=0}
   function buildGrid(){
     stopGrid();
-    if(S.loop!=='gridscroll'||idx<0||blankOn||!cues[idx])return;
+    var text=stageText();
+    if(S.loop!=='gridscroll'||!text?.trim())return;
     var out=$('#out'),box=out.querySelector('.grid-scroll');if(!box)return;
     var g=S.grid,horiz=g.dir==='left'||g.dir==='right',lanes=clamp(+g.lanes||1,1,12);
     var rect=box.getBoundingClientRect(),W=rect.width,H=rect.height;
     if(W<1||H<1)return;
-    var label=(g.text||cues[idx].text).trim()||' ';if(S.caps)label=label.toUpperCase();
+    var label=(g.text||text).trim()||' ';if(S.caps)label=label.toUpperCase();
     box.textContent='';gridTracks=[];
     var unit=horiz?H/lanes:W/lanes;
     var scale=Math.min(W/1920,H/1080);
@@ -591,7 +596,7 @@ html.saida .stage.bridge-mode { background: transparent !important; }
     gridStart=performance.now();gridFrame=requestAnimationFrame(gridTick);
   }
   function gridTick(now){
-    gridFrame=0;if(S.loop!=='gridscroll'||blankOn||!gridTracks.length)return;
+    gridFrame=0;if(S.loop!=='gridscroll'||!stageText()?.trim()||!gridTracks.length)return;
     var g=S.grid,base=g.dir==='right'||g.dir==='down',delta=(now-gridStart)/1000*Math.max(0,+g.speed||0)*Math.min($('#stage').clientWidth/1920,$('#stage').clientHeight/1080);
     for(var i=0;i<gridTracks.length;i++){
       var t=gridTracks[i],p=t.period,forward=base!==t.reverse;
@@ -600,7 +605,7 @@ html.saida .stage.bridge-mode { background: transparent !important; }
     }
     gridFrame=requestAnimationFrame(gridTick);
   }
-  function syncGrid(){if(S.loop==='gridscroll'&&idx>=0&&!blankOn)buildGrid();else stopGrid()}
+  function syncGrid(){if(S.loop==='gridscroll'&&stageText()?.trim())buildGrid();else stopGrid()}
   // A janela offscreen tem DOM próprio; precisa receber também o comando de saída.
   // Os estados enviados pelo editor não disparam uma saída artificial.
   function publishDesktop(transition){
@@ -615,28 +620,31 @@ html.saida .stage.bridge-mode { background: transparent !important; }
   }
   function renderStage(o){
     renderVars();
-    var out=$('#out'),on=idx>=0&&!blankOn&&cues[idx];
+    var out=$('#out'),text=stageText(),on=Boolean(text?.trim());
+    var liveBridge=bridgeSlide;
     if(S.loop==='gridscroll')o=null;stopGrid();
     function draw(){
       if(!on){out.innerHTML=''}
       else if(S.loop==='gridscroll'){out.innerHTML='<div class="grid-scroll"></div>'}
+      else if(liveBridge){out.replaceChildren(bridgeStage.take(text,bridgeStyle()))}
       else if(S.mode==='stanza'){
         var sec=cues[idx].sec,h='';
         cues.forEach(function(c,i){if(c.sec===sec){var cu=i===idx,l=lineHTML(c.text,cu);h+=cu?l:l.replace('class="ln','class="ln dim')}});
         out.innerHTML=h;
       }else out.innerHTML=lineHTML(cues[idx].text,true);
        orderUnits(out);measure();syncWarp();syncGrid();
+       if(liveBridge)prepareBridge();
     }
     clearTimeout(tx);
-    if(o&&o.leave&&out.firstChild&&S.exit!=='none'&&!reduced&&!out.dataset.leaving){
+    if(o&&o.leave&&(!liveBridge||o.fromBridge)&&out.firstChild&&S.exit!=='none'&&!reduced&&!out.dataset.leaving){
       out.dataset.leaving='1';
       tx=setTimeout(function(){delete out.dataset.leaving;draw()},exitMs());
     }else{delete out.dataset.leaving;draw()}
     $('#live').classList.toggle('on',!!on);
-    $('#liveTxt').textContent=on?'No ar':(blankOn?'Tela preta':'Tela vazia');
+    $('#liveTxt').textContent=on?'No ar':(blankOn&&!liveBridge?'Tela preta':'Tela vazia');
     $('#pos').textContent='Linha '+(idx+1)+' de '+cues.length;
-    $('#secName').textContent=cues[idx]?cues[idx].label+(blankOn?' (preto)':''):'Nenhuma linha no ar';
-    renderCues();publishDesktop(o);
+    $('#secName').textContent=liveBridge?'ProPresenter':cues[idx]?cues[idx].label+(blankOn?' (preto)':''):'Nenhuma linha no ar';
+    renderCues();if(!o?.fromBridge)publishDesktop(o);
   }
 
   /* ===== bandeira (warp) ===== */
@@ -730,14 +738,14 @@ html.saida .stage.bridge-mode { background: transparent !important; }
     Object.assign(S,patch);
     if(!keepPreset)S.preset='';
     save('spl.settings3',S);syncUI();
-    if(rb||'loop' in patch)renderStage();else{renderVars();syncWarp();if(S.loop==='gridscroll')syncGrid()}
+    if(rb||'loop' in patch)renderStage();else{renderVars();syncWarp();if(S.loop==='gridscroll')syncGrid();publishDesktop()}
   }
   function changeGrid(patch){Object.assign(S.grid,patch);save('spl.settings3',S);syncUI();syncGrid();publishDesktop()}
   function changeWarp(patch){Object.assign(S.warp,patch);save('spl.settings3',S);syncUI();syncWarp();publishDesktop()}
   function applyPreset(k){
     var p=Object.assign({},DEF,PRESETS[k]);
     p.warp=Object.assign({},DEF.warp,PRESETS[k].warp||{});p.grid=Object.assign({},S.grid);
-    delete p.n;p.preset=k;p.bg=S.bg;p.clean=S.clean;
+    delete p.n;p.preset=k;p.bg=S.bg;p.clean=S.clean;p.bridgeExit=S.bridgeExit;
     change(p,true);
   }
   function surprise(){
@@ -868,13 +876,18 @@ html.saida .stage.bridge-mode { background: transparent !important; }
 
   buildUI();reparse();renderSongs();syncEdit();syncUI();renderStage();
   if(window.souzDesktop){
-    var renderBridge = createProPresenterStage(document.querySelectorAll('.bridge-layer'));
     var bridgePanel = $('#bridgePanel');
     var bridgeStatus = $('#bridgeStatus');
     var bridgeStop = $('#bridgeStop');
     window.souzDesktop.onBridge(function(state) {
-      $('#stage').classList.toggle('bridge-mode', Boolean(state));
-      renderBridge(state);
+      var previous=bridgeSlide;
+      bridgeSlide=state;
+      if (Boolean(previous)!==Boolean(state) || previous?.current!==state?.current) {
+        var leave=Boolean(S.bridgeExit && previous?.current.trim() && state?.current.trim());
+        renderStage({leave:leave,fromBridge:true});
+      } else if (!$('#out').dataset.leaving) {
+        prepareBridge();
+      }
       if (window.souzDesktop.role === 'output') return;
       bridgeStop.disabled = !state;
       if (!state) {
@@ -890,6 +903,8 @@ html.saida .stage.bridge-mode { background: transparent !important; }
     });
     if (window.souzDesktop.role === 'control') {
       bridgePanel.hidden = false;
+      $('#bridgeExit').checked=!!S.bridgeExit;
+      $('#bridgeExit').onchange=function(){change({bridgeExit:this.checked},true)};
       var bridgeAddress = $('#bridgeAddress');
       bridgeAddress.value = load('spl.bridgeAddress', '');
       async function setBridge(address) {
@@ -912,12 +927,19 @@ html.saida .stage.bridge-mode { background: transparent !important; }
       setSaida(true);
       window.souzDesktop.onState(function(v){
         if(!v||!v.settings||!v.song)return;
+        var oldSettings=S;
         S=Object.assign({},DEF,v.settings);
         S.warp=Object.assign({},DEF.warp,v.settings.warp||{});
         S.grid=Object.assign({},DEF.grid,v.settings.grid||{});
         S.bg='checker';
         songs=[v.song];cur=v.song.id;idx=v.idx;blankOn=!!v.blank;
         reparse();
+        if(bridgeSlide){
+          var changes=Object.keys(S).filter(function(key){return JSON.stringify(S[key])!==JSON.stringify(oldSettings[key])});
+          if(changes.some(function(key){return REBUILD[key]||key==='loop'}))renderStage();
+          else if(changes.length){renderVars();syncWarp();if(S.loop==='gridscroll')syncGrid()}
+          return;
+        }
         // Respeita o mesmo fade/movimento de saída do operador antes de trocar a linha.
         renderStage({leave:!!(v.transition&&v.transition.leave)});
       });

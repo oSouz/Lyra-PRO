@@ -1,8 +1,8 @@
 {
   "name": "souz-pro-lyric-desktop",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "private": true,
-  "description": "Lyra Desktop — v0.6.6 com monitoramento Spout2 e animações",
+  "description": "Lyra Desktop — v0.6.7 com monitoramento Spout2 e animações",
   "main": "main.cjs",
   "scripts": {
     "test": "node --test test/propresenter-bridge.test.cjs test/updates.test.cjs",
